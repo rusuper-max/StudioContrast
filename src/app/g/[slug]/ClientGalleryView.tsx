@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import type { ClientGallery, GalleryImage } from "@/lib/gallery";
 import { cinzel } from "@/lib/fonts";
@@ -10,6 +10,61 @@ function formatPhotoCount(count: number): string {
   if (count === 1) return "1 fotografija";
   if (count >= 2 && count <= 4) return `${count} fotografije`;
   return `${count} fotografija`;
+}
+
+// Organize images into rows, maintaining chronological order but filling gaps smartly
+function organizeIntoRows(images: GalleryImage[], targetRowHeight: number, containerWidth: number): GalleryImage[][] {
+  if (images.length === 0) return [];
+
+  const rows: GalleryImage[][] = [];
+  const used = new Set<number>();
+  const gap = 12; // gap between images
+
+  let currentIndex = 0;
+
+  while (used.size < images.length) {
+    const row: GalleryImage[] = [];
+    let rowWidth = 0;
+
+    // Start with the next unused image in chronological order
+    while (currentIndex < images.length && used.has(currentIndex)) {
+      currentIndex++;
+    }
+
+    if (currentIndex >= images.length) break;
+
+    // Add the first image (maintains chronological order)
+    const firstImg = images[currentIndex];
+    const firstAspect = (firstImg.width && firstImg.height) ? firstImg.width / firstImg.height : 4/3;
+    const firstWidth = targetRowHeight * firstAspect;
+
+    row.push(firstImg);
+    used.add(currentIndex);
+    rowWidth = firstWidth;
+    currentIndex++;
+
+    // Fill the rest of the row
+    // First, try to add images in order
+    let tempIndex = currentIndex;
+    while (rowWidth < containerWidth - 100 && tempIndex < images.length) {
+      if (!used.has(tempIndex)) {
+        const img = images[tempIndex];
+        const aspect = (img.width && img.height) ? img.width / img.height : 4/3;
+        const imgWidth = targetRowHeight * aspect;
+
+        if (rowWidth + imgWidth + gap <= containerWidth + 50) {
+          row.push(img);
+          used.add(tempIndex);
+          rowWidth += imgWidth + gap;
+        }
+      }
+      tempIndex++;
+    }
+
+    rows.push(row);
+  }
+
+  return rows;
 }
 
 type Props = {
@@ -156,33 +211,73 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-3">
-            {images.map((img, i) => {
-              const aspectRatio = img.width && img.height ? img.width / img.height : 4 / 3;
+          <div className="space-y-2 sm:space-y-3">
+            {(() => {
+              // Simple row-based justified layout
+              const targetHeight = 280;
+              const containerWidth = 1800; // approximate max width
 
-              return (
-                <div
-                  key={img.public_id}
-                  className="group relative cursor-pointer overflow-hidden rounded-md"
-                  onClick={() => setLightboxIndex(i)}
-                >
-                  <div
-                    className="relative w-full bg-neutral-900"
-                    style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}
-                  >
-                    <Image
-                      src={img.thumbSrc}
-                      alt={`Fotografija ${i + 1}`}
-                      fill
-                      className="object-cover transition-all duration-300 group-hover:scale-[1.02] group-hover:brightness-110"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                      loading={i < 10 ? "eager" : "lazy"}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  </div>
+              // Group images into rows based on aspect ratios
+              const rows: { images: typeof images; totalAspect: number }[] = [];
+              let currentRow: typeof images = [];
+              let currentAspect = 0;
+              const targetAspect = containerWidth / targetHeight; // ~6.4 for full row
+
+              images.forEach((img, idx) => {
+                const aspect = (img.width && img.height) ? img.width / img.height : 4/3;
+
+                if (currentAspect + aspect > targetAspect && currentRow.length > 0) {
+                  // Current row is full enough, start new row
+                  rows.push({ images: currentRow, totalAspect: currentAspect });
+                  currentRow = [img];
+                  currentAspect = aspect;
+                } else {
+                  currentRow.push(img);
+                  currentAspect += aspect;
+                }
+              });
+
+              // Don't forget the last row
+              if (currentRow.length > 0) {
+                rows.push({ images: currentRow, totalAspect: currentAspect });
+              }
+
+              let globalIndex = 0;
+
+              return rows.map((row, rowIdx) => (
+                <div key={rowIdx} className="flex gap-2 sm:gap-3">
+                  {row.images.map((img) => {
+                    const aspect = (img.width && img.height) ? img.width / img.height : 4/3;
+                    const widthPercent = (aspect / row.totalAspect) * 100;
+                    const imgIndex = globalIndex++;
+
+                    return (
+                      <div
+                        key={img.public_id}
+                        className="group relative cursor-pointer overflow-hidden rounded-md"
+                        style={{ width: `${widthPercent}%` }}
+                        onClick={() => setLightboxIndex(images.findIndex(i => i.public_id === img.public_id))}
+                      >
+                        <div
+                          className="relative w-full bg-neutral-900"
+                          style={{ paddingBottom: `${(1 / aspect) * 100}%` }}
+                        >
+                          <Image
+                            src={img.thumbSrc}
+                            alt={`Fotografija ${imgIndex + 1}`}
+                            fill
+                            className="object-cover transition-all duration-300 group-hover:scale-[1.02] group-hover:brightness-110"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            loading={imgIndex < 10 ? "eager" : "lazy"}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         )}
       </main>
