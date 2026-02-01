@@ -147,7 +147,7 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
         </div>
       </header>
 
-      {/* Masonry Gallery Grid */}
+      {/* Gallery Grid - horizontal row-by-row layout */}
       <main className="mx-auto max-w-[2000px] px-3 py-6 sm:px-4 md:px-6">
         {images.length === 0 ? (
           <div className="flex min-h-[50vh] items-center justify-center">
@@ -156,19 +156,15 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
             </p>
           </div>
         ) : (
-          <div
-            className="columns-1 gap-3 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5"
-            style={{ columnFill: "balance" }}
-          >
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-3">
             {images.map((img, i) => {
               const aspectRatio = img.width && img.height ? img.width / img.height : 4 / 3;
 
               return (
                 <div
                   key={img.public_id}
-                  className="group relative mb-3 cursor-pointer overflow-hidden rounded-md break-inside-avoid"
+                  className="group relative cursor-pointer overflow-hidden rounded-md"
                   onClick={() => setLightboxIndex(i)}
-                  style={{ breakInside: "avoid" }}
                 >
                   <div
                     className="relative w-full bg-neutral-900"
@@ -179,7 +175,7 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
                       alt={`Fotografija ${i + 1}`}
                       fill
                       className="object-cover transition-all duration-300 group-hover:scale-[1.02] group-hover:brightness-110"
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                       loading={i < 10 ? "eager" : "lazy"}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
