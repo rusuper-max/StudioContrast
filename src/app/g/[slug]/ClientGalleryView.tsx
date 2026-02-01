@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { ClientGallery, GalleryImage } from "@/lib/gallery";
+import { cinzel } from "@/lib/fonts";
+
+// Helper za srpsku množinu
+function formatPhotoCount(count: number): string {
+  if (count === 1) return "1 fotografija";
+  if (count >= 2 && count <= 4) return `${count} fotografije`;
+  return `${count} fotografija`;
+}
 
 type Props = {
   gallery: ClientGallery;
@@ -66,7 +74,9 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
       <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="mb-2 text-2xl font-light text-white">{gallery.name}</h1>
+            <h1 className={`${cinzel.className} mb-3 text-2xl font-semibold tracking-wide text-white md:text-3xl`}>
+              {gallery.name}
+            </h1>
             {gallery.clientName && (
               <p className="text-neutral-400">za {gallery.clientName}</p>
             )}
@@ -111,22 +121,22 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-[2000px] items-center justify-between px-4 py-4">
-          <div>
-            <h1 className="text-xl font-light text-white">{gallery.name}</h1>
-            {gallery.clientName && (
-              <p className="text-sm text-neutral-400">{gallery.clientName}</p>
-            )}
-          </div>
-          <div className="text-sm text-neutral-400">
-            {images.length} fotografija
-          </div>
+      <header className="border-b border-white/10 bg-black">
+        <div className="mx-auto max-w-[2000px] px-4 py-8 text-center">
+          <h1 className={`${cinzel.className} text-3xl font-semibold tracking-wide text-white md:text-4xl lg:text-5xl`}>
+            {gallery.name}
+          </h1>
+          {gallery.clientName && (
+            <p className="mt-2 text-base text-neutral-400">{gallery.clientName}</p>
+          )}
+          <p className="mt-3 text-sm text-neutral-500">
+            {formatPhotoCount(images.length)}
+          </p>
         </div>
       </header>
 
       {/* Masonry Gallery Grid */}
-      <main className="mx-auto max-w-[2000px] px-2 py-4">
+      <main className="mx-auto max-w-[2000px] px-3 py-6 sm:px-4 md:px-6">
         {images.length === 0 ? (
           <div className="flex min-h-[50vh] items-center justify-center">
             <p className="text-neutral-400">
@@ -134,29 +144,33 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
             </p>
           </div>
         ) : (
-          <div className="columns-1 gap-2 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5">
+          <div
+            className="columns-1 gap-3 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5"
+            style={{ columnFill: "balance" }}
+          >
             {images.map((img, i) => {
               const aspectRatio = img.width && img.height ? img.width / img.height : 4 / 3;
 
               return (
                 <div
                   key={img.public_id}
-                  className="group relative mb-2 cursor-pointer overflow-hidden rounded-sm"
+                  className="group relative mb-3 cursor-pointer overflow-hidden rounded-md break-inside-avoid"
                   onClick={() => setLightboxIndex(i)}
+                  style={{ breakInside: "avoid" }}
                 >
                   <div
-                    className="relative w-full"
+                    className="relative w-full bg-neutral-900"
                     style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}
                   >
                     <Image
                       src={img.thumbSrc}
                       alt={`Fotografija ${i + 1}`}
                       fill
-                      className="object-cover transition-all duration-300 group-hover:scale-[1.03] group-hover:brightness-110"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 20vw"
-                      loading={i < 15 ? "eager" : "lazy"}
+                      className="object-cover transition-all duration-300 group-hover:scale-[1.02] group-hover:brightness-110"
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                      loading={i < 10 ? "eager" : "lazy"}
                     />
-                    <div className="absolute inset-0 bg-white/0 transition-colors duration-300 group-hover:bg-white/5" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   </div>
                 </div>
               );
