@@ -47,7 +47,7 @@ type Petal = {
 };
 
 export default function Petals() {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false); // Off by default
   const [paused, setPaused] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
