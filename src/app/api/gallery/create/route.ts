@@ -1,6 +1,6 @@
 // src/app/api/gallery/create/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { generateSlug, hashPassword, saveGalleryMeta, generateUploadSignature } from "@/lib/gallery";
+import { generateUniqueSlug, hashPassword, saveGalleryMeta, generateUploadSignature } from "@/lib/gallery";
 
 function isAdmin(req: NextRequest): boolean {
   const adminSecret = process.env.ADMIN_SECRET;
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    const slug = generateSlug();
+    const slug = await generateUniqueSlug();
 
     const saved = await saveGalleryMeta(slug, {
       name,

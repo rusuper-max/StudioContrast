@@ -3,9 +3,11 @@
 // Metadata stored as context on a special _meta asset in each gallery folder
 
 import { v2 as cloudinary } from "cloudinary";
+import crypto from "crypto";
 
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
 const CLIENTS_ROOT = process.env.CLOUDINARY_CLIENTS_ROOT || "clients";
+const PASSWORD_SALT = process.env.ADMIN_SECRET || "studio-contrast-salt";
 
 // Configure cloudinary
 cloudinary.config({
@@ -48,18 +50,40 @@ export function generateSlug(length = 8): string {
   return result;
 }
 
-// Simple hash for password (basic protection)
-export function hashPassword(password: string): string {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+// Generate unique slug with collision detection
+export async function generateUniqueSlug(maxAttempts = 5): Promise<string> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const slug = generateSlug();
+    const existing = await getGalleryMeta(slug);
+    if (!existing) {
+      return slug;
+    }
   }
-  return "h_" + Math.abs(hash).toString(36);
+  // If still colliding, use longer slug
+  return generateSlug(12);
+}
+
+// Secure password hashing using PBKDF2
+export function hashPassword(password: string): string {
+  const hash = crypto
+    .pbkdf2Sync(password, PASSWORD_SALT, 10000, 32, "sha256")
+    .toString("hex");
+  return "p_" + hash;
 }
 
 export function verifyPassword(input: string, stored: string): boolean {
+  // Support both old (h_) and new (p_) hash formats for backward compatibility
+  if (stored.startsWith("h_")) {
+    // Old weak hash - still verify but it works
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return stored === "h_" + Math.abs(hash).toString(36);
+  }
+  // New secure hash
   return hashPassword(input) === stored;
 }
 

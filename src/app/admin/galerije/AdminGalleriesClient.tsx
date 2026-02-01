@@ -34,6 +34,13 @@ export default function AdminGalleriesClient() {
   const [isDragging, setIsDragging] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Edit modal state
+  const [editingGallery, setEditingGallery] = useState<ClientGallery | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editClientName, setEditClientName] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (isAuthed) loadGalleries();
   }, [isAuthed]);
@@ -137,6 +144,8 @@ export default function AdminGalleriesClient() {
   }
 
   async function uploadToCloudinary(file: File, config: UploadConfig, onProgress: (p: number) => void): Promise<void> {
+    const UPLOAD_TIMEOUT = 120000; // 2 minutes per file
+
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append("file", file);
@@ -147,9 +156,20 @@ export default function AdminGalleriesClient() {
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`);
-      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
-      xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("Upload failed"));
-      xhr.onerror = () => reject(new Error("Upload failed"));
+      xhr.timeout = UPLOAD_TIMEOUT;
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.ontimeout = () => reject(new Error("Upload timeout - file too large or slow connection"));
       xhr.send(formData);
     });
   }
@@ -165,12 +185,54 @@ export default function AdminGalleriesClient() {
 
   async function handleDelete(slug: string, permanent: boolean) {
     if (!confirm(permanent ? "TRAJNO obrisati galeriju?" : "Deaktivirati galeriju?")) return;
-    await fetch("/api/gallery/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret },
-      body: JSON.stringify({ slug, permanent }),
-    });
-    loadGalleries();
+    try {
+      const res = await fetch("/api/gallery/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret },
+        body: JSON.stringify({ slug, permanent }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Brisanje nije uspelo");
+      }
+      loadGalleries();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Greška pri brisanju galerije");
+    }
+  }
+
+  function openEditModal(gallery: ClientGallery) {
+    setEditingGallery(gallery);
+    setEditName(gallery.name);
+    setEditClientName(gallery.clientName || "");
+    setEditPassword("");
+  }
+
+  async function handleSaveEdit() {
+    if (!editingGallery) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/gallery/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret },
+        body: JSON.stringify({
+          slug: editingGallery.slug,
+          name: editName,
+          clientName: editClientName || undefined,
+          password: editPassword || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Ažuriranje nije uspelo");
+      }
+      setEditingGallery(null);
+      loadGalleries();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Greška pri ažuriranju");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (!isAuthed) {
@@ -269,6 +331,7 @@ export default function AdminGalleriesClient() {
                     <div className="flex flex-col gap-2">
                       <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/g/${g.slug}`); alert("Link kopiran!"); }} className="rounded bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20">Kopiraj link</button>
                       <a href={`/g/${g.slug}`} target="_blank" className="rounded bg-white/10 px-3 py-1 text-center text-sm text-white hover:bg-white/20">Otvori</a>
+                      <button onClick={() => openEditModal(g)} className="rounded bg-blue-500/20 px-3 py-1 text-sm text-blue-400 hover:bg-blue-500/30">Izmeni</button>
                       <button onClick={() => handleDelete(g.slug, !g.active)} className="rounded bg-red-500/20 px-3 py-1 text-sm text-red-400 hover:bg-red-500/30">{g.active ? "Deaktiviraj" : "Obriši trajno"}</button>
                     </div>
                   </div>
@@ -278,6 +341,60 @@ export default function AdminGalleriesClient() {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingGallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-md rounded-xl border border-white/10 bg-neutral-900 p-6">
+            <h3 className="mb-4 text-lg font-medium text-white">Izmeni galeriju</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm text-neutral-400">Naziv galerije</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-neutral-400">Ime klijenta</label>
+                <input
+                  type="text"
+                  value={editClientName}
+                  onChange={(e) => setEditClientName(e.target.value)}
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-neutral-400">Nova šifra (ostavi prazno da zadržiš postojeću)</label>
+                <input
+                  type="text"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Unesi novu šifru..."
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editName.trim()}
+                  className="flex-1 rounded-lg bg-white py-2 font-medium text-black disabled:opacity-50"
+                >
+                  {isSaving ? "Čuvanje..." : "Sačuvaj"}
+                </button>
+                <button
+                  onClick={() => setEditingGallery(null)}
+                  className="rounded-lg border border-white/20 px-4 py-2 text-white hover:bg-white/10"
+                >
+                  Otkaži
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
