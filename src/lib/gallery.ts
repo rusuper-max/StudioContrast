@@ -72,51 +72,59 @@ export function buildFullUrl(publicId: string): string {
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_80,c_limit,w_2000/${publicId}`;
 }
 
-// Get gallery metadata from Cloudinary folder
+// Get gallery metadata from Cloudinary folder - using Admin API for immediate results
 export async function getGalleryMeta(slug: string): Promise<ClientGallery | null> {
   try {
     const folderPath = `${CLIENTS_ROOT}/${slug}`;
+    const metaPublicId = `${folderPath}/_meta`;
 
-    // Search for the _meta file in this folder
-    const metaSearch = await cloudinary.search
-      .expression(`folder=${folderPath} AND public_id:${folderPath}/_meta`)
-      .with_field("context")
-      .max_results(1)
-      .execute();
+    // Use Admin API to get the _meta resource directly (no indexing delay)
+    try {
+      const metaResource = await cloudinary.api.resource(metaPublicId, {
+        resource_type: "image",
+        context: true,
+      });
 
-    if (metaSearch.resources.length === 0) {
-      // No meta file, check if folder exists with images
-      const folderSearch = await cloudinary.search
-        .expression(`folder=${folderPath} AND resource_type:image`)
-        .max_results(1)
-        .execute();
+      const context = metaResource.context?.custom || {};
 
-      if (folderSearch.resources.length === 0) {
-        return null;
-      }
-
-      // Folder exists but no meta - return basic info
       return {
         slug,
         folder: folderPath,
-        name: slug,
-        createdAt: new Date().toISOString(),
-        active: true,
+        name: context.name || slug,
+        clientName: context.clientName || undefined,
+        password: context.password || undefined,
+        createdAt: context.createdAt || metaResource.created_at,
+        active: context.active !== "false",
       };
+    } catch (metaError: any) {
+      // _meta file doesn't exist, check if folder has any images
+      if (metaError?.error?.http_code === 404) {
+        try {
+          const folderImages = await cloudinary.api.resources({
+            type: "upload",
+            prefix: folderPath,
+            max_results: 1,
+            resource_type: "image",
+          });
+
+          if (folderImages.resources.length === 0) {
+            return null;
+          }
+
+          // Folder exists but no meta - return basic info
+          return {
+            slug,
+            folder: folderPath,
+            name: slug,
+            createdAt: new Date().toISOString(),
+            active: true,
+          };
+        } catch {
+          return null;
+        }
+      }
+      throw metaError;
     }
-
-    const metaResource = metaSearch.resources[0];
-    const context = metaResource.context?.custom || {};
-
-    return {
-      slug,
-      folder: folderPath,
-      name: context.name || slug,
-      clientName: context.clientName || undefined,
-      password: context.password || undefined,
-      createdAt: context.createdAt || metaResource.created_at,
-      active: context.active !== "false",
-    };
   } catch (error) {
     console.error("Error getting gallery meta:", error);
     return null;
