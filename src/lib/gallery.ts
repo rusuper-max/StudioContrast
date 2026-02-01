@@ -258,7 +258,12 @@ export async function listGalleryImages(slug: string): Promise<GalleryImage[]> {
 
     return (res.resources as any[])
       .filter((r: any) => !r.public_id.endsWith("/_meta"))
-      .sort((a: any, b: any) => a.public_id.localeCompare(b.public_id))
+      // Sort by upload time (newest first) - created_at is ISO string
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateA - dateB; // oldest first (chronological order)
+      })
       .map((r: any) => ({
         src: buildFullUrl(r.public_id),
         thumbSrc: buildThumbUrl(r.public_id),

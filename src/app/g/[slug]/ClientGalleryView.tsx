@@ -109,9 +109,14 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-neutral-500">
-            Studio Contrast
-          </p>
+          <a
+            href="https://studiocontrast.rs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-8 block text-center font-serif text-sm text-neutral-500 transition hover:text-white"
+          >
+            Studio <span className="bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">Contrast</span>
+          </a>
         </div>
       </div>
     );
@@ -120,8 +125,15 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
   // Gallery view with masonry layout
   return (
     <div className="min-h-screen bg-black">
-      {/* Header */}
+      {/* Header with Logo */}
       <header className="border-b border-white/10 bg-black">
+        {/* Logo */}
+        <div className="border-b border-white/5 py-4 text-center">
+          <a href="https://studiocontrast.rs" target="_blank" rel="noopener noreferrer" className="inline-block font-serif text-xl text-white/90 transition hover:text-white">
+            Studio <span className="bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">Contrast</span>
+          </a>
+        </div>
+        {/* Gallery Title */}
         <div className="mx-auto max-w-[2000px] px-4 py-8 text-center">
           <h1 className={`${cinzel.className} text-3xl font-semibold tracking-wide text-white md:text-4xl lg:text-5xl`}>
             {gallery.name}
@@ -180,8 +192,15 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-6 text-center text-sm text-neutral-600">
-        Studio Contrast
+      <footer className="border-t border-white/10 py-6 text-center">
+        <a
+          href="https://studiocontrast.rs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block font-serif text-sm text-neutral-500 transition hover:text-white"
+        >
+          Studio <span className="bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent">Contrast</span>
+        </a>
       </footer>
 
       {/* Lightbox */}
