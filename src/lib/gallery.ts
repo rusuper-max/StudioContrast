@@ -211,20 +211,23 @@ export async function deleteGallery(slug: string, deleteImages = false): Promise
   }
 }
 
-// List images in a gallery
+// List images in a gallery - using Admin API for immediate results (no indexing delay)
 export async function listGalleryImages(slug: string): Promise<GalleryImage[]> {
   try {
     const folderPath = `${CLIENTS_ROOT}/${slug}`;
 
-    const res = await cloudinary.search
-      .expression(`folder=${folderPath} AND resource_type:image AND -public_id:*/_meta`)
-      .sort_by("filename", "asc")
-      .max_results(500)
-      .execute();
+    // Use Admin API instead of Search API to avoid indexing delay
+    const res = await cloudinary.api.resources({
+      type: "upload",
+      prefix: folderPath,
+      max_results: 500,
+      resource_type: "image",
+    });
 
     return (res.resources as any[])
-      .filter((r) => !r.public_id.endsWith("/_meta"))
-      .map((r) => ({
+      .filter((r: any) => !r.public_id.endsWith("/_meta"))
+      .sort((a: any, b: any) => a.public_id.localeCompare(b.public_id))
+      .map((r: any) => ({
         src: buildFullUrl(r.public_id),
         thumbSrc: buildThumbUrl(r.public_id),
         width: r.width as number,
