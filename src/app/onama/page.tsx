@@ -170,6 +170,7 @@ function PersonCard({
           alt={`${person.name} — ${person.role}`}
           fill
           priority
+          unoptimized
           className="object-cover"
           sizes="(max-width: 1024px) 100vw, 50vw"
         />

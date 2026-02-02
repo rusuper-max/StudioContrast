@@ -51,6 +51,7 @@ export default function PortfolioPage() {
                     className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                     sizes="(max-width: 1024px) 100vw, 33vw"
                     priority
+                    unoptimized={c.cover.startsWith("/")}
                   />
                 </div>
                 <div className="mt-3 text-center">
