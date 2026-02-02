@@ -244,11 +244,13 @@ export async function deleteGallery(slug: string, deleteImages = false): Promise
 }
 
 // List images in a gallery - using Admin API for immediate results (no indexing delay)
+// Supports up to 1000 images via pagination (2 requests of 500 each)
 export async function listGalleryImages(slug: string): Promise<GalleryImage[]> {
   try {
     const folderPath = `${CLIENTS_ROOT}/${slug}`;
+    const allResources: any[] = [];
 
-    // Use Admin API instead of Search API to avoid indexing delay
+    // First request
     const res = await cloudinary.api.resources({
       type: "upload",
       prefix: folderPath,
@@ -256,7 +258,21 @@ export async function listGalleryImages(slug: string): Promise<GalleryImage[]> {
       resource_type: "image",
     });
 
-    return (res.resources as any[])
+    allResources.push(...res.resources);
+
+    // If there's more, fetch second batch
+    if (res.next_cursor) {
+      const res2 = await cloudinary.api.resources({
+        type: "upload",
+        prefix: folderPath,
+        max_results: 500,
+        resource_type: "image",
+        next_cursor: res.next_cursor,
+      });
+      allResources.push(...res2.resources);
+    }
+
+    return allResources
       .filter((r: any) => !r.public_id.endsWith("/_meta"))
       // Sort by upload time (newest first) - created_at is ISO string
       .sort((a: any, b: any) => {
