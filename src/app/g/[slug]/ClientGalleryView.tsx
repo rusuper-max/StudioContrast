@@ -24,7 +24,12 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [downloading, setDownloading] = useState(false);
+
+  // Download state
+  const [downloadState, setDownloadState] = useState<"idle" | "preparing" | "background" | "done" | "error">("idle");
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // Keyboard navigation for lightbox
   useEffect(() => {
@@ -45,28 +50,75 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
     };
   }, [lightboxIndex, images.length]);
 
-  async function handleDownload() {
-    setDownloading(true);
-    try {
-      const params = new URLSearchParams({ slug: gallery.slug });
-      if (password) params.set("p", password);
-      const res = await fetch(`/api/gallery/download?${params}`);
-      if (!res.ok) throw new Error("Download failed");
+  function startDownload() {
+    const controller = new AbortController();
+    setAbortController(controller);
+    setDownloadState("preparing");
+    setDownloadProgress(0);
+    setShowDownloadModal(true);
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${gallery.name}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Greška pri preuzimanju albuma");
-    } finally {
-      setDownloading(false);
-    }
+    const params = new URLSearchParams({ slug: gallery.slug });
+    if (password) params.set("p", password);
+
+    fetch(`/api/gallery/download?${params}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Download failed");
+
+        const contentLength = res.headers.get("Content-Length");
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error("No reader");
+
+        const chunks: BlobPart[] = [];
+        let received = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total > 0) {
+            setDownloadProgress(Math.round((received / total) * 100));
+          } else {
+            // Estimate based on image count (~500KB per image average)
+            const estimated = images.length * 500 * 1024;
+            setDownloadProgress(Math.min(95, Math.round((received / estimated) * 100)));
+          }
+        }
+
+        const blob = new Blob(chunks, { type: "application/zip" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${gallery.name}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setDownloadState("done");
+        setDownloadProgress(100);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") {
+          setDownloadState("idle");
+          setShowDownloadModal(false);
+        } else {
+          setDownloadState("error");
+        }
+      });
+  }
+
+  function cancelDownload() {
+    abortController?.abort();
+    setAbortController(null);
+    setDownloadState("idle");
+    setShowDownloadModal(false);
+  }
+
+  function backgroundDownload() {
+    setDownloadState("background");
+    setShowDownloadModal(false);
   }
 
   async function handleUnlock(e: React.FormEvent) {
@@ -172,17 +224,17 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
           {/* Download & Visit buttons */}
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <button
-              onClick={handleDownload}
-              disabled={downloading || images.length === 0}
+              onClick={startDownload}
+              disabled={downloadState === "preparing" || downloadState === "background" || images.length === 0}
               className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
             >
-              {downloading ? (
+              {downloadState === "background" ? (
                 <>
                   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Priprema albuma...
+                  Priprema u toku ({downloadProgress}%)
                 </>
               ) : (
                 <>
@@ -356,6 +408,90 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
             onClick={() => setLightboxIndex((i) => (i !== null && i < images.length - 1 ? i + 1 : 0))}
             className="absolute bottom-0 right-0 top-16 w-1/3 cursor-e-resize bg-transparent"
           />
+        </div>
+      )}
+
+      {/* Download Modal */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-neutral-900 p-6 text-center">
+            {downloadState === "preparing" && (
+              <>
+                <svg className="mx-auto mb-4 h-10 w-10 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <h3 className="mb-2 text-lg font-medium text-white">Priprema albuma...</h3>
+                <p className="mb-4 text-sm text-neutral-400">
+                  {formatPhotoCount(images.length)} se pakuje u ZIP
+                </p>
+
+                {/* Progress bar */}
+                <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+                <p className="mb-5 text-xs text-neutral-500">{downloadProgress}%</p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={backgroundDownload}
+                    className="flex-1 rounded-lg border border-white/20 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+                  >
+                    Nastavi u pozadini
+                  </button>
+                  <button
+                    onClick={cancelDownload}
+                    className="rounded-lg border border-red-500/30 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+                  >
+                    Prekini
+                  </button>
+                </div>
+              </>
+            )}
+
+            {downloadState === "done" && (
+              <>
+                <svg className="mx-auto mb-4 h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <h3 className="mb-2 text-lg font-medium text-white">Album je spreman!</h3>
+                <p className="mb-5 text-sm text-neutral-400">Preuzimanje je započeto.</p>
+                <button
+                  onClick={() => { setShowDownloadModal(false); setDownloadState("idle"); }}
+                  className="w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-neutral-200"
+                >
+                  Zatvori
+                </button>
+              </>
+            )}
+
+            {downloadState === "error" && (
+              <>
+                <svg className="mx-auto mb-4 h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="mb-2 text-lg font-medium text-white">Greška</h3>
+                <p className="mb-5 text-sm text-neutral-400">Priprema albuma nije uspela. Pokušajte ponovo.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setShowDownloadModal(false); setDownloadState("idle"); }}
+                    className="flex-1 rounded-lg border border-white/20 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+                  >
+                    Zatvori
+                  </button>
+                  <button
+                    onClick={startDownload}
+                    className="flex-1 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-neutral-200"
+                  >
+                    Pokušaj ponovo
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
