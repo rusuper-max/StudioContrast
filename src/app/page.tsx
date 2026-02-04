@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Studio Contrast | Foto i video",
   description:
-    "Prirodni trenuci, istinite emocije i upečatljive fotografije u boji i crno-belo.",
+    "Fotografisanje Užice i Zlatibor: prirodni trenuci, istinite emocije i upečatljive fotografije u boji i crno-belo.",
 };
 
 const HERO_VEIL = true;
@@ -43,6 +43,11 @@ export default function HomePage() {
       <ScrollRestorer />
 
       <main>
+        {/* Lokalni SEO hint – ne remeti dizajn (sr-only) */}
+        <p className="sr-only">
+          Studio Contrast — fotografisanje u Užicu i Zlatiboru, a radimo i širom Srbije: venčanja,
+          portreti, porodične i poslovne sesije.
+        </p>
         <HeroVideo veil={HERO_VEIL} center={HERO_CENTER} />
         <PetalsClient />
 

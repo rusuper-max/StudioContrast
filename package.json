@@ -11,6 +11,7 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.cjs --max-warnings=9999 || true"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",
     "next": "15.5.7",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.14",
+    "@types/archiver": "^7.0.0",
     "@types/node": "^20.19.22",
     "@types/nodemailer": "7.0.2",
     "@types/react": "^19.2.2",

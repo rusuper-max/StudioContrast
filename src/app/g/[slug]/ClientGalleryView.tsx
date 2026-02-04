@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { ClientGallery, GalleryImage } from "@/lib/gallery";
 import { cinzel } from "@/lib/fonts";
@@ -10,61 +10,6 @@ function formatPhotoCount(count: number): string {
   if (count === 1) return "1 fotografija";
   if (count >= 2 && count <= 4) return `${count} fotografije`;
   return `${count} fotografija`;
-}
-
-// Organize images into rows, maintaining chronological order but filling gaps smartly
-function organizeIntoRows(images: GalleryImage[], targetRowHeight: number, containerWidth: number): GalleryImage[][] {
-  if (images.length === 0) return [];
-
-  const rows: GalleryImage[][] = [];
-  const used = new Set<number>();
-  const gap = 12; // gap between images
-
-  let currentIndex = 0;
-
-  while (used.size < images.length) {
-    const row: GalleryImage[] = [];
-    let rowWidth = 0;
-
-    // Start with the next unused image in chronological order
-    while (currentIndex < images.length && used.has(currentIndex)) {
-      currentIndex++;
-    }
-
-    if (currentIndex >= images.length) break;
-
-    // Add the first image (maintains chronological order)
-    const firstImg = images[currentIndex];
-    const firstAspect = (firstImg.width && firstImg.height) ? firstImg.width / firstImg.height : 4/3;
-    const firstWidth = targetRowHeight * firstAspect;
-
-    row.push(firstImg);
-    used.add(currentIndex);
-    rowWidth = firstWidth;
-    currentIndex++;
-
-    // Fill the rest of the row
-    // First, try to add images in order
-    let tempIndex = currentIndex;
-    while (rowWidth < containerWidth - 100 && tempIndex < images.length) {
-      if (!used.has(tempIndex)) {
-        const img = images[tempIndex];
-        const aspect = (img.width && img.height) ? img.width / img.height : 4/3;
-        const imgWidth = targetRowHeight * aspect;
-
-        if (rowWidth + imgWidth + gap <= containerWidth + 50) {
-          row.push(img);
-          used.add(tempIndex);
-          rowWidth += imgWidth + gap;
-        }
-      }
-      tempIndex++;
-    }
-
-    rows.push(row);
-  }
-
-  return rows;
 }
 
 type Props = {
@@ -79,6 +24,7 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   // Keyboard navigation for lightbox
   useEffect(() => {
@@ -98,6 +44,30 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
       document.body.style.overflow = "";
     };
   }, [lightboxIndex, images.length]);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const params = new URLSearchParams({ slug: gallery.slug });
+      if (password) params.set("p", password);
+      const res = await fetch(`/api/gallery/download?${params}`);
+      if (!res.ok) throw new Error("Download failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${gallery.name}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Greška pri preuzimanju albuma");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
@@ -199,6 +169,42 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
           <p className="mt-3 text-sm text-neutral-500">
             {formatPhotoCount(images.length)}
           </p>
+          {/* Download & Visit buttons */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={handleDownload}
+              disabled={downloading || images.length === 0}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            >
+              {downloading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Priprema albuma...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Preuzmi ceo album
+                </>
+              )}
+            </button>
+            <a
+              href="https://studiocontrast.rs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Poseti naš sajt
+            </a>
+          </div>
         </div>
       </header>
 
@@ -223,7 +229,7 @@ export default function ClientGalleryView({ gallery, images, hasPassword }: Prop
               let currentAspect = 0;
               const targetAspect = containerWidth / targetHeight; // ~6.4 for full row
 
-              images.forEach((img, idx) => {
+              images.forEach((img) => {
                 const aspect = (img.width && img.height) ? img.width / img.height : 4/3;
 
                 if (currentAspect + aspect > targetAspect && currentRow.length > 0) {

@@ -9,20 +9,30 @@ const ICON_VER = "20251024b";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
-  description: "Wedding & portrait photography studio — premium dark-first portfolio i ponude.",
+  description:
+    "Fotografisanje Užice (baza) i širom Srbije — wedding & portrait studio, premium dark-first portfolio i ponude.",
   alternates: { canonical: "/" },
+  keywords: [
+    "fotografisanje Užice",
+    "fotograf Užice",
+    "wedding photographer Serbia",
+    "portraits Zlatibor",
+    "fotograf Srbija",
+  ],
   openGraph: {
     type: "website",
     url: SITE_URL,
     siteName: SITE_NAME,
     title: SITE_NAME,
-    description: "Wedding & portrait photography studio — premium dark-first portfolio i ponude.",
+    description:
+      "Fotografisanje Užice (baza) i širom Srbije — wedding & portrait studio, premium dark-first portfolio i ponude.",
     images: [{ url: "/og.jpg", width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_NAME,
-    description: "Wedding & portrait photography studio — premium dark-first portfolio i ponude.",
+    description:
+      "Fotografisanje Užice i Zlatibor region — wedding & portrait studio, premium dark-first portfolio i ponude.",
     images: ["/og.jpg"],
   },
   robots: { index: true, follow: true },
@@ -40,9 +50,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     url: SITE_URL,
     image: `${SITE_URL}/og.jpg`,
     description:
-      "Wedding & portrait photography studio — prirodni trenuci, istinite emocije i upečatljive fotografije.",
-    areaServed: "Serbia",
-    address: { "@type": "PostalAddress", addressCountry: "RS" },
+      "Wedding & portrait photography studio — prirodni trenuci, istinite emocije i upečatljive fotografije. Fotografisanje Užice i Zlatibor region.",
+    areaServed: ["Užice", "Zlatibor", "Srbija", "Serbia"],
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "RS",
+      addressLocality: "Užice",
+      postalCode: "31000",
+    },
     sameAs: [],
   };
 

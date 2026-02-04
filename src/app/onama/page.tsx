@@ -4,11 +4,13 @@ import Container from "@/components/Container";
 import Image from "next/image";
 import Link from "next/link";
 import { fancy, deco } from "@/lib/fonts";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "O nama | Studio Contrast",
   description:
     "Studio Contrast — Janko i Marija. Dokumentarna fotografija sa editorial estetikom: iskreni trenuci, čisti tonovi, elegantan kontrast.",
+  alternates: { canonical: "/onama" },
 };
 
 /** Putanje do portreta — stavi svoje fajlove u /public/about/ (npr. 1500×2000) */

@@ -3,11 +3,13 @@ import Footer from "@/components/Footer";
 import Container from "@/components/Container";
 import Link from "next/link";
 import { fancy, deco } from "@/lib/fonts";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Kontakt | Studio Contrast",
   description:
-    "Kontaktirajte Studio Contrast — email, telefoni i lokacija. Radimo širom Srbije i regiona.",
+    "Kontaktirajte Studio Contrast — fotografisanje Užice i Zlatibor region; email, telefoni i lokacija studija.",
+  alternates: { canonical: "/kontakt" },
 };
 
 export const runtime = "nodejs";

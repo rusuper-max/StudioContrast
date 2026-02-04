@@ -1,5 +1,6 @@
 // src/app/faq/page.tsx
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
@@ -7,10 +8,11 @@ import Link from "next/link";
 import { fancy, deco } from "@/lib/fonts";
 import FaqListClient, { type FaqLite } from "@/components/FaqListClient";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "FAQ | Studio Contrast",
   description:
     "Odgovori na česta pitanja: uslovi plaćanja, rok isporuke, broj fotografija, RAW fajlovi, broj fotografa, dodatne usluge, putni troškovi, odlaganje/otkazivanje i drugo.",
+  alternates: { canonical: "/faq" },
 };
 
 type FaqItem = {
