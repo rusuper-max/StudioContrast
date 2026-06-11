@@ -1,32 +1,33 @@
 /* src/app/theme.css */
 
-/* Base tokens (shared) */
+/* Base tokens (shared) — svetla editorial paleta */
 :root {
-  --accent: 20 184 166;      /* #14b8a6 – tvoja teal */
-  --accent-fg: 0 0 0;
-  --radius: 16px;
+  --accent: 140 115 64;      /* #8C7340 – šampanj (tekst-bezbedan na svetlom) */
+  --accent-fg: 250 247 242;
+  --radius: 8px;
 }
 
-/* Dark (default) */
+/* Light (default) */
 :root,
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: 0 0 0;
-  --fg: 243 244 246;         /* neutral-100 */
-  --muted: 38 38 38;         /* neutral-800 */
-  --border: 64 64 64;        /* neutral-700 */
-  --card: 10 10 10;
+html,
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: 250 247 242;         /* #FAF7F2 ivory */
+  --fg: 43 41 37;            /* #2B2925 topli ink */
+  --muted: 243 238 229;      /* #F3EEE5 surface-2 / skeleton */
+  --border: 232 225 212;     /* #E8E1D4 hairline */
+  --card: 255 255 255;
   --ring: var(--accent);
 }
 
-/* Light */
-html[data-theme="light"] {
-  color-scheme: light;
-  --bg: 250 250 250;         /* neutral-50 */
-  --fg: 17 24 39;            /* neutral-900 */
-  --muted: 245 245 245;      /* neutral-100 */
-  --border: 229 231 235;     /* neutral-200 */
-  --card: 255 255 255;
+/* Opcioni tamni varijant — SAMO na eksplicitan zahtev */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: 20 19 17;
+  --fg: 250 247 242;
+  --muted: 43 41 37;
+  --border: 64 60 53;
+  --card: 28 27 24;
   --ring: var(--accent);
 }
 
@@ -51,7 +52,7 @@ html, body {
   background-color: rgb(var(--card));
   color: rgb(var(--fg));
   border: 1px solid rgb(var(--border));
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 
 .app-ring {
@@ -64,7 +65,7 @@ html, body {
 .bg-accent { background-color: rgb(var(--accent)); }
 .ring-accent { --tw-ring-color: rgb(var(--accent)); }
 
-/* Scrollbar (subtle) */
+/* Scrollbar (subtle, light) */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--border)) transparent;

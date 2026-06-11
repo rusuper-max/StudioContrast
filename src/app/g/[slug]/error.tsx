@@ -14,22 +14,17 @@ export default function GalleryError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4">
-      <div className="text-center">
-        <h1 className="mb-4 text-2xl font-light text-white">
-          Došlo je do greške
-        </h1>
-        <p className="mb-6 text-neutral-400">
-          Nismo uspeli da učitamo galeriju. Molimo pokušajte ponovo.
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] px-4 py-12">
+      <div className="card w-full max-w-sm p-8 text-center sm:p-10">
+        <h1 className="mb-3 text-2xl text-[var(--fg)]">Došlo je do greške</h1>
+        <p className="mb-6 text-sm leading-relaxed text-[var(--muted)]">
+          Nismo uspeli da učitamo galeriju. Pokušajte ponovo za koji trenutak.
         </p>
-        <button
-          onClick={reset}
-          className="rounded-lg bg-white px-6 py-3 font-medium text-black transition hover:bg-neutral-200"
-        >
-          Pokušaj ponovo
+        <button onClick={reset} className="btn btn-primary w-full">
+          Pokušajte ponovo
         </button>
       </div>
-      <p className="mt-8 text-xs text-neutral-600">Studio Contrast</p>
+      <p className="mt-8 font-serif text-sm text-[var(--muted)]">Studio Contrast</p>
     </div>
   );
 }

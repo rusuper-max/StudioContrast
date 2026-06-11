@@ -23,11 +23,11 @@ export default function OffersPage({ searchParams }: Props) {
       <main className="section">
         <Container>
           <div className="text-center">
-            <div className="label-gold">Ponude</div>
-            <h1 className="mt-2 font-serif text-3xl font-semibold md:text-5xl">
+            <div className="kicker">Ponude</div>
+            <h1 className="mt-3 font-serif text-4xl md:text-5xl">
               Izaberite paket i prilagodite ga
             </h1>
-            <p className="lead mx-auto mt-2 max-w-2xl">
+            <p className="lead mx-auto mt-3 max-w-2xl">
               Cene su orijentacione. Nakon što pošaljete detalje (datum, lokacija, trajanje),
               javimo se sa preciznom ponudom i raspoloživošću.
             </p>

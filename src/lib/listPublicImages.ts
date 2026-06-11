@@ -40,6 +40,10 @@ export function listPublicImagesIn(
   const arr: string[] = (PORTFOLIO_MANIFEST as any)[cat] ?? [];
   const transform = getTransform(opts?.transform);
 
+  // Bez cloud name-a (npr. lokalni dev bez .env.local) ne možemo da
+  // sastavimo validan delivery URL — bolje prazno nego polomljene slike.
+  if (!CLOUD) return [];
+
   // manifest od sada čuva public_id, ali zbog kompatibilnosti
   // podržimo i stare pune URL-ove
   const publicIds = new Set<string>();

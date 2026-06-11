@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Edit(./**)",
+      "Write(./**)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx next build --turbopack)",
+      "Bash(npm run build)",
+      "mcp__Claude_Preview__preview_screenshot",
+      "mcp__Claude_Preview__preview_resize",
+      "mcp__Claude_Preview__preview_logs",
+      "mcp__Claude_Preview__preview_console_logs",
+      "mcp__ccd_session__mark_chapter",
+      "mcp__visualize__show_widget"
+    ]
+  }
+}

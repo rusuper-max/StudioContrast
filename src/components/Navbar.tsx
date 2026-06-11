@@ -14,30 +14,30 @@ const rightNav = [
   { href: "/kontakt", label: "Kontakt" },
 ];
 
-/** Paketi + boje */
+/** Paketi + boje (ujednačena editorial paleta: taupe / šampanj / ink) */
 const OFFERS: readonly {
   slug: PlanSlug;
   name: string;
-  color: string; // akcent za hover
-  wipe: string;  // levo→desno wipe
+  color: string; // akcent za ivicu/hover
+  wipe: string;  // diskretan flat tint na hover
 }[] = [
   {
     slug: "basic",
     name: "Standard",
-    color: "rgba(229,231,235,.85)",
-    wipe: "linear-gradient(90deg, rgba(229,231,235,.35), rgba(203,213,225,.25))",
+    color: "#9A938A",
+    wipe: "rgba(154,147,138,0.14)",
   },
   {
     slug: "classic",
     name: "Premium",
-    color: "rgba(245,208,66,.85)",
-    wipe: "linear-gradient(90deg, rgba(245,208,66,.35), rgba(190,147,20,.25))",
+    color: "#B89B5E",
+    wipe: "rgba(184,155,94,0.16)",
   },
   {
     slug: "signature",
     name: "Signature",
-    color: "rgba(45,212,191,.85)",
-    wipe: "linear-gradient(90deg, rgba(94,234,212,.35), rgba(20,184,166,.25))",
+    color: "#2B2925",
+    wipe: "rgba(43,41,37,0.08)",
   },
 ] as const;
 
@@ -85,28 +85,35 @@ export default function Navbar() {
   const activeOffer = OFFERS.find(o => o.slug === hoverPlan) || OFFERS[0];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/50 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]">
       {/* Desktop */}
       <Container className="hidden h-16 items-center justify-between md:grid md:grid-cols-3">
         {/* LEFT NAV */}
         <nav className="flex items-center gap-6">
-          <Link href="/portfolio" className="navlink navlink--accent text-sm inline-flex items-center">
-            Portfolio
+          <Link href="/portfolio" className="navlink text-sm inline-flex items-center">
+            Priče
           </Link>
 
-          {/* Ponude — mega dropdown (levo paketi, desno vidovi) */}
+          {/* Paketi — mega dropdown (levo paketi, desno vidovi) */}
           <div
             className="relative inline-block"
             onMouseEnter={openOffers}
             onMouseLeave={scheduleCloseOffers}
+            onFocus={openOffers}
+            onBlur={scheduleCloseOffers}
           >
-            <Link href="/ponude" className="navlink navlink--accent text-sm inline-flex items-center">
-              Ponude <span className="ml-1 text-white/70">▾</span>
+            <Link
+              href="/ponude"
+              className="navlink text-sm inline-flex items-center"
+              aria-haspopup="menu"
+              aria-expanded={offersOpen}
+            >
+              Paketi <span className="ml-1 text-[var(--muted)]" aria-hidden="true">▾</span>
             </Link>
 
             {offersOpen && (
               <div
-                className="absolute left-0 top-full z-50 mt-0 overflow-visible rounded-2xl border border-white/10 bg-black/80 p-2 shadow-2xl shadow-black/50 backdrop-blur"
+                className="absolute left-0 top-full z-50 mt-0 overflow-visible rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-xl shadow-black/5"
                 role="menu"
                 onMouseEnter={openOffers}
                 onMouseLeave={scheduleCloseOffers}
@@ -122,10 +129,10 @@ export default function Navbar() {
                 <div className="flex flex-nowrap items-stretch gap-2">
                   {/* Levo: paketi (fiksna širina, FLEX-COL i svaka pločica flex-1 da popuni visinu) */}
                   <div
-                    className="shrink-0 rounded-xl border border-white/10 p-2 flex flex-col"
+                    className="shrink-0 rounded-xl border border-[var(--border)] p-2 flex flex-col"
                     style={{ width: TILE_W }}
                   >
-                    <div className="px-1 pb-1 text-xs text-white/60">Izaberite paket</div>
+                    <div className="px-1 pb-1 text-xs text-[var(--muted)]">Izaberite paket</div>
                     <div className="flex flex-col gap-2 h-full">
                       {OFFERS.map((o) => {
                         const active = hoverPlan === o.slug;
@@ -133,13 +140,13 @@ export default function Navbar() {
                           <button
                             key={o.slug}
                             onMouseEnter={() => setHoverPlan(o.slug)}
-                            className="offer-item relative overflow-hidden rounded-lg px-3 py-2 text-left text-sm text-white/85 transition hover:text-white focus:outline-none flex-1 min-h-[48px]"
+                            className="offer-item relative overflow-hidden rounded-lg px-3 py-2 text-left text-sm text-[var(--fg)] transition focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] flex-1 min-h-[48px]"
                             title={o.name}
                             aria-pressed={active}
                             style={{
                               boxShadow: active ? `inset 0 0 0 1px ${o.color}` : "none",
-                              border: active ? `1px solid rgba(255,255,255,0.12)` : "1px solid rgba(255,255,255,0.08)",
-                              backgroundColor: "rgba(0,0,0,0.3)",
+                              border: active ? `1px solid ${o.color}` : "1px solid var(--border)",
+                              backgroundColor: "var(--surface)",
                             }}
                           >
                             <span
@@ -148,7 +155,7 @@ export default function Navbar() {
                             />
                             <span className="relative z-10 flex items-center justify-between">
                               {o.name}
-                              <span className="text-white/40 transition-transform">→</span>
+                              <span className="text-[var(--muted)] transition-transform">→</span>
                             </span>
                           </button>
                         );
@@ -160,8 +167,8 @@ export default function Navbar() {
                   <div className="w-2 shrink-0" />
 
                   {/* Desno: vidovi (svaka pločica tačno kao levo: TILE_W) */}
-                  <div className="shrink-0 rounded-xl border border-white/10 p-2">
-                    <div className="px-2 pb-1 text-xs text-white/60">Izaberite vid proslave</div>
+                  <div className="shrink-0 rounded-xl border border-[var(--border)] p-2">
+                    <div className="px-2 pb-1 text-xs text-[var(--muted)]">Izaberite vid proslave</div>
                     <ul
                       className="grid"
                       style={{
@@ -173,7 +180,7 @@ export default function Navbar() {
                         <li key={ev}>
                           <Link
                             href={`/ponude?plan=${activeOffer.slug}&type=${encodeURIComponent(ev)}`}
-                            className="event-link group relative block overflow-hidden rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/85 transition min-h-[48px]"
+                            className="event-link group relative block overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--fg)] transition min-h-[48px]"
                             title={`${activeOffer.name} — ${ev}`}
                           >
                             <span className="relative z-10 flex items-center justify-between">
@@ -184,17 +191,8 @@ export default function Navbar() {
                                 />
                                 {ev}
                               </span>
-                              <span className="text-white/40 transition-transform group-hover:translate-x-0.5">→</span>
+                              <span className="text-[var(--muted)] transition-transform group-hover:translate-x-0.5">→</span>
                             </span>
-
-                            {/* hover aura — DO SAME IVICE */}
-                            <span
-                              className="hover-fill pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                              style={{
-                                background:
-                                  "radial-gradient(80% 80% at 50% 0%, rgba(255,255,255,.08), rgba(255,255,255,0))",
-                              }}
-                            />
                           </Link>
                         </li>
                       ))}
@@ -205,7 +203,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <Link href="/onama" className="navlink navlink--accent text-sm inline-flex items-center">
+          <Link href="/onama" className="navlink text-sm inline-flex items-center">
             O nama
           </Link>
         </nav>
@@ -223,48 +221,49 @@ export default function Navbar() {
         {/* RIGHT NAV + CTA */}
         <div className="flex items-center justify-end gap-6">
           {rightNav.map((i) => (
-            <Link key={i.href} href={i.href} className="navlink navlink--accent text-sm inline-flex items-center">
+            <Link key={i.href} href={i.href} className="navlink text-sm inline-flex items-center">
               {i.label}
             </Link>
           ))}
-          <Link href="/upit" className="btn btn-primary">Pošalji upit</Link>
+          <Link href="/upit" className="btn btn-primary">Proverite svoj datum</Link>
         </div>
       </Container>
 
       {/* Mobile */}
       <Container className="flex h-16 items-center justify-between md:hidden">
-        <Link href="/" className="font-serif text-lg">
-          Studio <span className="text-accent-grad">Contrast</span>
+        <Link href="/" className="brand-logo font-serif text-lg">
+          <span className="brand-part">Studio Contrast</span>
         </Link>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="rounded-lg border border-white/20 px-3 py-2 text-sm text-white/90"
-          aria-label="Menu"
+          className="rounded-full border border-[var(--border-strong)] px-4 py-2 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)]"
+          aria-label="Otvori meni"
+          aria-expanded={open}
         >
           Meni
         </button>
       </Container>
 
       {open && (
-        <div className="md:hidden border-t border-white/10 bg-black/85 backdrop-blur">
-          <Container className="flex flex-col gap-2 py-3">
-            <Link href="/portfolio" className="py-2 text-white/90 hover:text-white" onClick={() => setOpen(false)}>
-              Portfolio
+        <div className="md:hidden border-t border-[var(--border)] bg-[var(--bg)]">
+          <Container className="flex flex-col gap-1 py-4">
+            <Link href="/portfolio" className="py-2 font-serif text-2xl text-[var(--fg)] hover:text-[var(--accent-strong)]" onClick={() => setOpen(false)}>
+              Priče
             </Link>
-            <Link href="/ponude" className="py-2 text-white/90 hover:text-white" onClick={() => setOpen(false)}>
-              Ponude
+            <Link href="/ponude" className="py-2 font-serif text-2xl text-[var(--fg)] hover:text-[var(--accent-strong)]" onClick={() => setOpen(false)}>
+              Paketi
             </Link>
-            <Link href="/onama" className="py-2 text-white/90 hover:text-white" onClick={() => setOpen(false)}>
+            <Link href="/onama" className="py-2 font-serif text-2xl text-[var(--fg)] hover:text-[var(--accent-strong)]" onClick={() => setOpen(false)}>
               O nama
             </Link>
-            <Link href="/faq" className="py-2 text-white/90 hover:text-white" onClick={() => setOpen(false)}>
+            <Link href="/faq" className="py-2 font-serif text-2xl text-[var(--fg)] hover:text-[var(--accent-strong)]" onClick={() => setOpen(false)}>
               FAQ
             </Link>
-            <Link href="/kontakt" className="py-2 text-white/90 hover:text-white" onClick={() => setOpen(false)}>
+            <Link href="/kontakt" className="py-2 font-serif text-2xl text-[var(--fg)] hover:text-[var(--accent-strong)]" onClick={() => setOpen(false)}>
               Kontakt
             </Link>
-            <Link href="/upit" onClick={() => setOpen(false)} className="btn btn-primary w-full">
-              Pošalji upit
+            <Link href="/upit" onClick={() => setOpen(false)} className="btn btn-primary mt-3 w-full">
+              Proverite svoj datum
             </Link>
           </Container>
         </div>
@@ -281,11 +280,10 @@ export default function Navbar() {
           transform: scaleX(1);
           opacity: 1;
         }
-        .events-panel .event-link:hover,
-        .event-link:hover {
+        .event-link:hover,
+        .event-link:focus-visible {
           border-color: var(--accentColor);
           box-shadow: inset 0 0 0 1px var(--accentColor);
-          color: var(--accentColor);
         }
       `}</style>
     </header>

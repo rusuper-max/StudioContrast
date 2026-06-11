@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
 import Link from "next/link";
-import { fancy, deco } from "@/lib/fonts";
 import FaqListClient, { type FaqLite } from "@/components/FaqListClient";
 
 export const metadata: Metadata = {
@@ -116,7 +115,7 @@ const FAQ: FaqItem[] = [
           <em> „preko reda“</em> ispred redovnih obrada. Gotovu online galeriju dobijate u roku od{" "}
           <strong>3–5 radnih dana</strong> od događaja (umesto standardnog roka).
         </p>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-white/80">
+        <ul className="mt-3 list-disc space-y-1 pl-5">
           <li>Kvalitet i selekcija su identični kao kod standardne obrade — ubrzava se samo isporuka.</li>
           <li>Opcija se dodaje kao doplata u <Link className="link" href="/ponude">konfiguratoru</Link>.</li>
           <li>Za ubrzanu isporuku <em>videa</em> napišite u poruci — javimo dostupne mogućnosti.</li>
@@ -261,23 +260,21 @@ export default function FAQPage() {
         <Container>
           {/* Header */}
           <div className="text-center">
-            <div className={`${fancy.className} text-accent-grad select-none text-4xl leading-none md:text-5xl`}>
-              Česta pitanja
-            </div>
-            <h1 className="mt-2 font-serif text-3xl font-semibold md:text-5xl">FAQ</h1>
-            <p className="lead mx-auto mt-3 max-w-2xl text-white/85">
+            <span className="kicker">FAQ</span>
+            <h1 className="mt-3">Česta pitanja</h1>
+            <p className="lead mx-auto mt-4 max-w-2xl">
               Kratak vodič kroz najvažnije informacije — ako vam nešto nije jasno,{" "}
               <Link href="/kontakt" className="link">pišite nam</Link>.
             </p>
           </div>
 
           {/* TOC */}
-          <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-white/10 bg-black/30 p-4">
-            <div className={`${deco.className} label-accent`}>Brzi skok</div>
-            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="card mx-auto mt-10 max-w-3xl p-5 md:p-6">
+            <span className="kicker">Brzi skok</span>
+            <ul className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {FAQ.map((f) => (
                 <li key={f.id}>
-                  <a href={`#${f.id}`} className="link text-sm">{f.q}</a>
+                  <a href={`#${f.id}`} className="link text-sm text-[var(--muted)]">{f.q}</a>
                 </li>
               ))}
             </ul>
@@ -287,9 +284,9 @@ export default function FAQPage() {
           <FaqListClient items={lite} />
 
           {/* CTA */}
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/ponude" className="btn btn-outline">Pogledaj ponude</Link>
-            <Link href="/upit" className="btn btn-primary">Pošalji upit</Link>
+          <div className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
+            <Link href="/ponude" className="btn btn-outline">Pogledajte ponude</Link>
+            <Link href="/upit" className="btn btn-primary">Proverite svoj datum</Link>
           </div>
         </Container>
       </main>

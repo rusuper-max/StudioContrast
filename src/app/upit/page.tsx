@@ -2,15 +2,15 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
-import { fancy } from "@/lib/fonts";
 import InquiryForm from "@/components/InquiryForm";
 import QuickInquiry from "@/components/QuickInquiry";
+import { testimonials } from "@/data/testimonials";
 import type { PlanSlug } from "@/data/packages";
 
 export const metadata = {
-  title: "Pošalji upit | Studio Contrast",
+  title: "Pošaljite upit | Studio Contrast",
   description:
-    "Pošaljite detaljan upit: paket, dodaci, datum, lokacija i kontakt. Mi odgovaramo u najkraćem roku.",
+    "Pošaljite detaljan upit: paket, dodaci, datum, lokacija i kontakt. Odgovaramo u roku od 24 časa.",
 };
 
 export const runtime = "nodejs";
@@ -68,10 +68,11 @@ const DISPLAY_PLAN_NAME: Record<PlanSlug, string> = {
   signature: "Signature",
 };
 
-const PLAN_COLORS: Record<PlanSlug, { border: string; badge: string }> = {
-  basic: { border: "rgba(229,231,235,.55)", badge: "rgba(229,231,235,.45)" },
-  classic: { border: "rgba(245,208,66,.65)", badge: "rgba(245,208,66,.55)" },
-  signature: { border: "rgba(45,212,191,.7)", badge: "rgba(45,212,191,.55)" },
+/** Boje po paketu — svetla editorial paleta (samo za malu tačku/akcent) */
+const PLAN_COLORS: Record<PlanSlug, { dot: string }> = {
+  basic: { dot: "#9A938A" },
+  classic: { dot: "#B89B5E" },
+  signature: { dot: "#2B2925" },
 };
 
 function prettyLabel(key: string) {
@@ -150,14 +151,8 @@ export default function InquiryPage({ searchParams = {} }: { searchParams?: Sear
   for (const key of selectedAddons) backQs.set(key, "1");
   const backToConfiguratorHref = `/ponude${backQs.toString() ? `?${backQs.toString()}` : ""}`;
 
-  // akcent boje iz plana → CSS varijable koje koristimo ispod
-  const accentStyle =
-    hasPlan && prefill.plan
-      ? ({
-          ["--accent" as any]: PLAN_COLORS[prefill.plan].border,
-          ["--accentBadge" as any]: PLAN_COLORS[prefill.plan].badge,
-        } as React.CSSProperties)
-      : undefined;
+  // jedan citat mladenaca za aside pored forme
+  const quote = testimonials[0];
 
   return (
     <>
@@ -165,49 +160,50 @@ export default function InquiryPage({ searchParams = {} }: { searchParams?: Sear
       <main className="section">
         <Container>
           <div className="text-center">
-            <div className={`${fancy.className} text-accent-grad select-none text-4xl leading-none md:text-5xl`}>
-              Pošalji upit
-            </div>
-            <h1 className="mt-2 font-serif text-3xl font-semibold md:text-5xl">
-              Recite nam detalje — mi se javljamo uskoro
-            </h1>
-            <p className="lead mx-auto mt-3 max-w-2xl text-white/85">
-              Ako ste došli iz „Ponuda“, vaša podešavanja su već popunjena. Po potrebi ih izmenite,
-              dodajte datum, lokaciju i kontakt, a zatim pošaljite upit.
+            <div className="kicker">Upit</div>
+            <h1 className="mt-3 font-serif text-4xl md:text-5xl">Pošaljite upit</h1>
+            <p className="lead mx-auto mt-4 max-w-2xl">
+              Odgovorićemo u roku od 24 časa. Ako ste došli iz ponuda, vaša podešavanja su
+              već popunjena — dodajte datum, lokaciju i kontakt.
             </p>
           </div>
 
           {/* ——— REZIME ——— (samo ako postoji plan) */}
-          {hasPlan && (
-            <div className="mt-10 accent-card rounded-2xl border border-white/10 bg-white/[0.04] p-4" style={accentStyle}>
-              <div className="text-sm text-white/70">Odabrali ste</div>
-              <div className="mt-1 text-lg font-medium">
-                {prefill.plan ? DISPLAY_PLAN_NAME[prefill.plan] : ""}{prefill.type ? ` · ${prefill.type}` : ""}
+          {hasPlan && prefill.plan && (
+            <div className="card mt-10 p-5 md:p-6">
+              <div className="text-sm text-[var(--muted)]">Odabrali ste</div>
+              <div className="mt-1 flex items-center gap-2 text-lg font-medium text-[var(--fg)]">
+                <span
+                  aria-hidden
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: PLAN_COLORS[prefill.plan].dot }}
+                />
+                {DISPLAY_PLAN_NAME[prefill.plan]}{prefill.type ? ` · ${prefill.type}` : ""}
               </div>
 
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/10 p-3">
-                  <div className="text-xs text-white/60">Orijentaciona cena</div>
-                  <div className="mt-1 text-2xl font-semibold">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[10px] border border-[var(--border)] p-3">
+                  <div className="text-xs text-[var(--muted)]">Orijentaciona cena</div>
+                  <div className="mt-1 font-serif text-2xl text-[var(--fg)]">
                     {prefill.priceHint ? `${prefill.priceHint.toLocaleString("sr-RS")} €` : "—"}
                   </div>
                   {!!prefill.extraHours && (
-                    <div className="mt-1 text-xs text-white/60">
+                    <div className="mt-1 text-xs text-[var(--muted)]">
                       + {prefill.extraHours}h posle ponoći (obračun se vrši po ceni iz konfiguratora)
                     </div>
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/10 p-3">
-                  <div className="text-xs text-white/60">Dodatne opcije</div>
+                <div className="rounded-[10px] border border-[var(--border)] p-3">
+                  <div className="text-xs text-[var(--muted)]">Dodatne opcije</div>
                   {selectedAddons.length === 0 ? (
-                    <div className="mt-1 text-white/80 text-sm">Bez dodatnih opcija</div>
+                    <div className="mt-1 text-sm text-[var(--fg)]">Bez dodatnih opcija</div>
                   ) : (
-                    <ul className="mt-1 flex flex-wrap gap-2">
+                    <ul className="mt-2 flex flex-wrap gap-2">
                       {selectedAddons.map((k) => (
                         <li
                           key={k}
-                          className="addon-chip rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-sm text-white/85"
+                          className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-sm text-[var(--fg)]"
                           title={prettyLabel(k)}
                         >
                           {prettyLabel(k)}
@@ -218,94 +214,74 @@ export default function InquiryPage({ searchParams = {} }: { searchParams?: Sear
                 </div>
               </div>
 
-              <div className="mt-3">
-                <a href={backToConfiguratorHref} className="accent-btn inline-flex items-center rounded-xl px-3 py-2 text-sm">
-                  Vrati se na konfigurator
+              <div className="mt-4">
+                <a href={backToConfiguratorHref} className="link text-sm">
+                  ← Vratite se na konfigurator
                 </a>
               </div>
-
-              <style>{`
-                .accent-card { transition: box-shadow .25s ease, border-color .25s ease; }
-                .accent-card:hover {
-                  border-color: var(--accentBadge);
-                  box-shadow: 0 0 0 1px var(--accentBadge) inset, 0 0 42px rgba(255,255,255,0.04) inset;
-                }
-                .addon-chip {
-                  transition: color .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .2s ease;
-                }
-                .addon-chip:hover {
-                  color: var(--accent);
-                  border-color: var(--accentBadge);
-                  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-                  box-shadow:
-                    0 0 0 1px var(--accentBadge) inset,
-                    0 0 26px var(--accentBadge),
-                    0 0 12px rgba(255,255,255,0.05) inset;
-                  transform: translateY(-1px);
-                }
-                .accent-btn {
-                  border: 1px solid var(--accentBadge);
-                  color: var(--accent);
-                  background: transparent;
-                  transition: background .2s, border-color .2s, color .2s, box-shadow .2s;
-                }
-                .accent-btn:hover {
-                  border-color: var(--accent);
-                  color: var(--accent);
-                  background: rgba(255,255,255,0.05);
-                  box-shadow: 0 0 0 1px var(--accentBadge) inset;
-                }
-              `}</style>
             </div>
           )}
 
-          {/* ——— FORMA ili TEAL banner + BRZI UPIT ——— */}
+          {/* ——— FORMA + aside citat ——— */}
           {hasPlan ? (
-            <div className="mt-10">
+            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
               <InquiryForm prefill={prefill as any} />
+
+              {/* PLACEHOLDER — zameniti pravim sadržajem */}
+              <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Utisak mladenaca">
+                <figure className="card p-6">
+                  <blockquote className="font-serif text-xl italic leading-relaxed text-[var(--fg)]">
+                    „{quote.quote}“
+                  </blockquote>
+                  <figcaption className="mt-4 text-sm text-[var(--muted)]">
+                    {quote.names} · {quote.location}, {quote.dateLabel}
+                  </figcaption>
+                </figure>
+              </aside>
             </div>
           ) : (
-            <div className="mt-10">
-              {/* TEAL brand callout */}
-              <div className="brand-callout relative overflow-hidden rounded-2xl border border-teal-400/35 bg-teal-400/10 p-4 md:p-5 text-teal-100">
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 opacity-60"
-                  style={{ background: "radial-gradient(120% 120% at 0% 0%, rgba(45,212,191,.08), transparent 55%)" }}
-                />
-                <div className="relative text-lg font-semibold">Niste odabrali paket</div>
-                <p className="relative mt-1 text-sm text-teal-50/90">
-                  Potpuna forma se otključava kada u <span className="text-teal-100">Konfiguratoru</span> izaberete
-                  paket i opcije. Ako imate kratko pitanje, pošaljite brzi upit ispod.
-                </p>
-                <div className="relative mt-3">
-                  <a href="/ponude" className="btn btn-primary">Idi na konfigurator</a>
+            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+              <div>
+                {/* Napomena: potpuna forma traži izabran paket */}
+                <div className="rounded-xl border border-[var(--accent)] bg-[var(--surface)] p-5 md:p-6">
+                  <h2 className="font-serif text-xl">Niste odabrali paket</h2>
+                  <p className="mt-2 text-sm text-[var(--muted)]">
+                    Potpuna forma se otključava kada u konfiguratoru izaberete paket i opcije.
+                    Ako imate kratko pitanje, pošaljite brzi upit ispod.
+                  </p>
+                  <div className="mt-4">
+                    <a href="/ponude" className="btn btn-primary">Otvorite konfigurator</a>
+                  </div>
                 </div>
-                <style>{`
-                  .brand-callout { transition: box-shadow .25s ease, border-color .25s ease; }
-                  .brand-callout:hover {
-                    border-color: rgba(45,212,191,.55);
-                    box-shadow: inset 0 0 0 1px rgba(45,212,191,.35),
-                                inset 0 0 42px rgba(255,255,255,.04);
-                  }
-                `}</style>
+
+                {/* Brzi upit */}
+                <div className="card mt-6 p-5 md:p-6">
+                  <h3 className="font-serif text-lg">Brzi upit (bez konfiguratora)</h3>
+                  <p className="mt-1 text-sm text-[var(--muted)]">
+                    Kratko pitanje ili provera termina? Pošaljite nam poruku, javljamo se uskoro.
+                  </p>
+                  <div className="mt-4">
+                    <QuickInquiry />
+                  </div>
+                </div>
               </div>
 
-              {/* Brzi upit */}
-              <div className="mt-6 card p-4 md:p-6">
-                <h3 className="text-base font-semibold">Brzi upit (bez konfiguratora)</h3>
-                <p className="mt-1 text-sm text-white/70">
-                  Kratko pitanje ili provera termina? Pošaljite nam poruku, javljamo se uskoro.
-                </p>
-                <div className="mt-3">
-                  <QuickInquiry />
-                </div>
-              </div>
+              {/* PLACEHOLDER — zameniti pravim sadržajem */}
+              <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Utisak mladenaca">
+                <figure className="card p-6">
+                  <blockquote className="font-serif text-xl italic leading-relaxed text-[var(--fg)]">
+                    „{quote.quote}“
+                  </blockquote>
+                  <figcaption className="mt-4 text-sm text-[var(--muted)]">
+                    {quote.names} · {quote.location}, {quote.dateLabel}
+                  </figcaption>
+                </figure>
+              </aside>
             </div>
           )}
 
-          <p className="mt-6 text-center text-xs text-white/60">
-            Radimo širom Srbije i regiona. U sezoni termini se brzo popunjavaju — javite se na vreme.
+          <p className="mt-10 text-center text-xs text-[var(--muted)]">
+            Radimo širom Srbije i regiona. U sezoni se termini brzo popunjavaju — javite se na vreme.
           </p>
         </Container>
       </main>

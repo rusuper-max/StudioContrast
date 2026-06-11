@@ -14,19 +14,14 @@ export default function AdminError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4">
-      <div className="text-center">
-        <h1 className="mb-4 text-2xl font-light text-white">
-          Greška u admin panelu
-        </h1>
-        <p className="mb-6 text-neutral-400">
-          Došlo je do greške. Molimo pokušajte ponovo.
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] px-4 py-12">
+      <div className="card w-full max-w-sm p-8 text-center">
+        <h1 className="mb-3 text-2xl text-[var(--fg)]">Greška u admin panelu</h1>
+        <p className="mb-6 text-sm leading-relaxed text-[var(--muted)]">
+          Došlo je do greške. Pokušajte ponovo.
         </p>
-        <button
-          onClick={reset}
-          className="rounded-lg bg-white px-6 py-3 font-medium text-black transition hover:bg-neutral-200"
-        >
-          Pokušaj ponovo
+        <button onClick={reset} className="btn btn-primary w-full">
+          Pokušajte ponovo
         </button>
       </div>
     </div>

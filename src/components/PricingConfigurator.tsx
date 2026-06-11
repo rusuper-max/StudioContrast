@@ -7,26 +7,11 @@ import { getPlanIncludes } from "@/data/planIncludes";
 import { EVENT_TYPES as FALLBACK_EVENTS, type EventType } from "@/lib/addons";
 import type { AddonRule } from "@/lib/addons";
 
-/** Vizuelne boje po paketu */
-const PLAN_COLORS: Record<PlanSlug, { border: string; orbit: string; badge: string }> = {
-  basic: {
-    border: "rgba(229,231,235,.55)",
-    orbit:
-      "conic-gradient(from 0deg, rgba(229,231,235,.0) 0deg, rgba(229,231,235,.75) 25deg, rgba(203,213,225,.0) 50deg, rgba(229,231,235,.0) 360deg)",
-    badge: "rgba(229,231,235,.45)",
-  },
-  classic: {
-    border: "rgba(245,208,66,.65)",
-    orbit:
-      "conic-gradient(from 0deg, rgba(255,227,134,.0) 0deg, rgba(255,227,134,.8) 25deg, rgba(190,147,20,.0) 50deg, rgba(255,227,134,.0) 360deg)",
-    badge: "rgba(245,208,66,.55)",
-  },
-  signature: {
-    border: "rgba(45,212,191,.7)",
-    orbit:
-      "conic-gradient(from 0deg, rgba(94,234,212,.0) 0deg, rgba(94,234,212,.85) 25deg, rgba(20,184,166,.0) 50deg, rgba(94,234,212,.0) 360deg)",
-    badge: "rgba(45,212,191,.55)",
-  },
+/** Vizuelne boje po paketu — svetla editorial paleta */
+const PLAN_COLORS: Record<PlanSlug, { ring: string }> = {
+  basic: { ring: "#9A938A" },
+  classic: { ring: "#B89B5E" },
+  signature: { ring: "#2B2925" },
 };
 
 /** Prikazna imena (vizuelno), slugovi ostaju isti */
@@ -382,7 +367,7 @@ setEventType(matched as EventType);
     return `/upit?${q.toString()}`;
   }, [plan, eventType, price, extraHours, addonChecked]);
 
-  // Opisi: neutralne stavke + extras + uključeni addoni (sijaju)
+  // Opisi: neutralne stavke + extras + uključeni addoni
   const includesBase = getPlanIncludes(eventType, plan);
 
   const includedAddons: string[] = addonKeysForCurrent()
@@ -402,28 +387,21 @@ setEventType(matched as EventType);
   })();
 
   const note = notes?.[eventType]?.[plan];
-  const planColor = PLAN_COLORS[plan];
 
   return (
-    <div className="grid gap-6 md:grid-cols-[320px,1fr]">
+    <div className="grid gap-6 md:grid-cols-[320px_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)_300px]">
       {/* LEVO — izbor */}
-      <div className="card p-4">
+      <div className="card self-start p-5">
         {/* Tip proslave */}
         <div>
-          <div className="text-sm text-white/60">Tip proslave</div>
+          <div className="text-sm text-[var(--muted)]">Tip proslave</div>
           <div className="mt-2">
-            <div
-              className="select-wrap relative"
-              style={
-                {
-                  ["--selBorder" as any]: planColor.border,
-                } as React.CSSProperties
-              }
-            >
+            <div className="relative">
               <select
                 value={eventType}
                 onChange={(e) => setEventType(e.target.value as EventType)}
-                className="event-select nice w-full appearance-none rounded-xl border bg-black/40 px-3 py-2 pr-9 transition"
+                aria-label="Tip proslave"
+                className="w-full appearance-none rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-9 text-[var(--fg)] transition focus:border-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2"
               >
                 {events.map((t) => (
                   <option key={t} value={t}>
@@ -431,99 +409,59 @@ setEventType(matched as EventType);
                   </option>
                 ))}
               </select>
-              <span className="sel-caret pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/70">▾</span>
+              <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)]">▾</span>
             </div>
-            <div className="mt-1 text-xs text-white/60">
+            <div className="mt-1 text-xs text-[var(--muted)]">
               Cene i mogućnosti zavise od tipa proslave.
             </div>
           </div>
         </div>
 
-        <style>{`
-          /* Fancy select wrapper with subtle inner glow that follows the active plan color */
-          .select-wrap {
-            border-radius: 12px;
-            background:
-              linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)) padding-box;
-            box-shadow:
-              inset 0 0 0 1px var(--selBorder),
-              inset 0 0 24px color-mix(in oklab, var(--selBorder) 22%, transparent);
-          }
-          .select-wrap:hover {
-            box-shadow:
-              inset 0 0 0 1px var(--selBorder),
-              inset 0 0 36px color-mix(in oklab, var(--selBorder) 30%, transparent);
-          }
-          .event-select.nice {
-            outline: none;
-            border: 1px solid transparent; /* wrapper drži pravi border */
-            background-clip: padding-box;
-            backdrop-filter: blur(2px);
-          }
-          .event-select.nice:focus-visible {
-            box-shadow: none;
-          }
-          .select-wrap:has(select:focus-visible),
-          .select-wrap:has(select:focus) {
-            box-shadow:
-              inset 0 0 0 2px var(--selBorder),
-              inset 0 0 42px color-mix(in oklab, var(--selBorder) 36%, transparent);
-          }
-          .sel-caret {
-            filter: drop-shadow(0 1px 0 rgba(0,0,0,.25));
-            color: color-mix(in oklab, var(--selBorder) 80%, white);
-          }
-        `}</style>
-
         {/* Paketi */}
-        <div className="mt-5 text-sm text-white/60">Izbor paketa</div>
+        <div className="mt-6 text-sm text-[var(--muted)]">Izbor paketa</div>
         <div className="mt-2 grid gap-2">
           {(["basic","classic","signature"] as PlanSlug[]).map((p) => {
             const isActive = plan === p;
-            const color = PLAN_COLORS[p];
+            const ring = PLAN_COLORS[p].ring;
 
             return (
               <div key={p}>
                 <button
+                  type="button"
                   onClick={() => setPlan(p)}
                   aria-pressed={isActive}
                   data-active={isActive}
-                  className="offer-btn w-full flex items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:bg-white/5 focus:outline-none"
+                  className="w-full rounded-[10px] border bg-[var(--surface)] px-3 py-2.5 text-left transition hover:bg-black/[0.03] focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2"
                   style={{
-                    borderColor: isActive ? color.border : "rgba(255,255,255,.10)",
-                    boxShadow: isActive ? `0 0 0 1px ${color.border}` : "none",
-                    background: isActive ? "rgba(255,255,255,0.03)" : "transparent",
-                    ["--planColor" as any]: color.border,
+                    borderColor: isActive ? ring : "var(--border)",
+                    boxShadow: isActive ? `0 0 0 1px ${ring}` : "none",
                   }}
-                  title={`Izaberi paket ${DISPLAY_PLAN_NAME[p]}`}
+                  title={`Izaberite paket ${DISPLAY_PLAN_NAME[p]}`}
                 >
-                  <div>
-                    <div className="font-medium transition-colors" style={{ color: isActive ? color.border : undefined }}>
-                      {DISPLAY_PLAN_NAME[p]}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 font-medium text-[var(--fg)]">
+                        {DISPLAY_PLAN_NAME[p]}
+                        {isActive && (
+                          <span aria-hidden className="shrink-0" style={{ color: ring }}>
+                            <CheckIcon />
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[var(--muted)]">{PLANS[p].tagline}</div>
                     </div>
-                    <div className="text-xs text-white/70">{PLANS[p].tagline}</div>
-                  </div>
-                  <div
-                    className="text-sm text-white/80 rounded-full px-2.5 py-1 border transition-colors"
-                    style={{ borderColor: isActive ? color.badge : "rgba(255,255,255,.0)", color: isActive ? color.border : undefined }}
-                  >
-                    Počev od {effectiveBaseFor(p).toLocaleString("sr-RS")} €
+                    <div className="whitespace-nowrap text-sm text-[var(--muted)]">
+                      od {effectiveBaseFor(p).toLocaleString("sr-RS")} €
+                    </div>
                   </div>
                 </button>
 
                 {/* Collapsible opis za aktivan paket */}
                 {isActive && (
-                  <details
-                    className="mt-2 rounded-xl border bg-white/[0.04] group"
-                    style={{
-                      borderColor: planColor.border,
-                      ["--accent" as any]: planColor.border,
-                      ["--accentBadge" as any]: planColor.badge,
-                    }}
-                  >
-                    <summary className="flex items-center justify-between cursor-pointer select-none px-3 py-2">
-                      <span className="text-sm text-white/80">Šta ovaj paket uključuje</span>
-                      <span className="chev" style={{ color: planColor.border }}>
+                  <details className="group mt-2 rounded-[10px] border border-[var(--border)] bg-[var(--surface)]">
+                    <summary className="flex cursor-pointer select-none items-center justify-between rounded-[10px] px-3 py-2 focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2">
+                      <span className="text-sm text-[var(--fg)]">Šta ovaj paket uključuje</span>
+                      <span className="text-[var(--muted)] transition-transform duration-200 group-open:rotate-180">
                         <ChevronIcon />
                       </span>
                     </summary>
@@ -532,76 +470,45 @@ setEventType(matched as EventType);
                       <ul className="space-y-1.5">
                         {/* 1) Osnovne stavke plana */}
                         {includesBase.map((it, idx) => (
-                          <li key={`incbase-${idx}`} className="flex items-start gap-2 text-sm text-white/85">
-                            <CheckIcon /><span>{it}</span>
+                          <li key={`incbase-${idx}`} className="flex items-start gap-2 text-sm text-[var(--fg)]">
+                            <span className="shrink-0 text-[var(--accent-strong)]"><CheckIcon /></span>
+                            <span>{it}</span>
                           </li>
                         ))}
 
                         {/* 2) Extras iz API-ja */}
                         {extrasIncluded.map((it, idx) => (
-                          <li key={`extra-${idx}`} className="flex items-start gap-2 text-sm text-white/80">
-                            <CheckIcon /><span>{it}</span>
+                          <li key={`extra-${idx}`} className="flex items-start gap-2 text-sm text-[var(--fg)]">
+                            <span className="shrink-0 text-[var(--accent-strong)]"><CheckIcon /></span>
+                            <span>{it}</span>
                           </li>
                         ))}
 
-                        {/* 3) NAPOMENA pre “sijača” (REORDERED) */}
+                        {/* 3) Napomena */}
                         {note && (
-                          <li key="note" className="flex items-start gap-2 text-sm text-white/85 mt-2">
-                            <CheckIcon />
+                          <li key="note" className="mt-2 flex items-start gap-2 text-sm text-[var(--muted)]">
+                            <span className="shrink-0 text-[var(--accent-strong)]"><CheckIcon /></span>
                             <span>{note}</span>
                           </li>
                         )}
 
-                        {/* 4) Uključeni addoni — uvek POSLEDNJI i “sijaju” */}
+                        {/* 4) Uključeni addoni — uvek poslednji, diskretan šampanj okvir */}
                         {includedAddons.map((it, idx) => (
                           <li
                             key={`adinc-${idx}`}
-                            className="included-shine flex items-start gap-2 text-sm relative rounded-lg border px-2 py-1.5"
-                            style={{
-                              borderColor: "var(--accentBadge)",
-                              color: "var(--accent)",
-                              background:
-                                "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
-                              boxShadow:
-                                "0 0 0 1px var(--accentBadge) inset, 0 0 18px rgba(255,255,255,0.06) inset",
-                            }}
+                            className="flex items-start gap-2 rounded-lg border border-[var(--accent)] px-2 py-1.5 text-sm text-[var(--fg)]"
                           >
-                            <SparkleIcon />
-                            <span className="inline-flex items-center gap-2 text-white/90">
+                            <span className="shrink-0 text-[var(--accent-strong)]"><SparkleIcon /></span>
+                            <span className="inline-flex flex-wrap items-center gap-2">
                               {it}
-                              <span
-                                className="rounded-full border px-2 py-0.5 text-xs"
-                                style={{ borderColor: "var(--accentBadge)", color: "var(--accent)" }}
-                              >
+                              <span className="rounded-full border border-[var(--accent)] px-2 py-0.5 text-xs text-[var(--accent-strong)]">
                                 Uključeno
                               </span>
                             </span>
-                            <span className="shine" />
                           </li>
                         ))}
                       </ul>
                     </div>
-
-                    <style>{`
-                      details[open] .chev svg { transform: rotate(180deg); }
-                      .chev svg { transition: transform .25s ease; }
-
-                      .included-shine { overflow: hidden; position: relative; }
-                      .included-shine .shine {
-                        position: absolute;
-                        inset: 0;
-                        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.10) 50%, transparent 100%);
-                        transform: translateX(-100%);
-                        animation: shine-move 2.75s linear infinite;
-                        opacity: .5;
-                        pointer-events: none;
-                      }
-                      @keyframes shine-move {
-                        0% { transform: translateX(-120%); }
-                        60% { transform: translateX(120%); }
-                        100% { transform: translateX(120%); }
-                      }
-                    `}</style>
                   </details>
                 )}
               </div>
@@ -609,50 +516,11 @@ setEventType(matched as EventType);
           })}
         </div>
       </div>
-      <style>{`
-        .offer-btn {
-          position: relative;
-          overflow: hidden;
-          transform: translateZ(0);
-          transition: transform .18s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
-        }
-        .offer-btn::after {
-          content: "";
-          position: absolute;
-          inset: -2px;
-          border-radius: 12px;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity .18s ease;
-        }
-        /* Pulse + tiny lift only when hovering a NON-active plan */
-        .offer-btn:not([data-active="true"]):hover {
-          transform: translateZ(0) scale(1.012);
-        }
-        .offer-btn:not([data-active="true"]):hover::after {
-          opacity: .95;
-          animation: offer-pulse 1.1s ease-in-out infinite;
-          box-shadow:
-            0 0 0 1px var(--planColor),
-            0 0 22px color-mix(in oklab, var(--planColor) 48%, transparent);
-        }
-        @keyframes offer-pulse {
-          0%, 100% {
-            box-shadow:
-              0 0 0 1px var(--planColor),
-              0 0 18px color-mix(in oklab, var(--planColor) 42%, transparent);
-          }
-          50% {
-            box-shadow:
-              0 0 0 1px var(--planColor),
-              0 0 34px color-mix(in oklab, var(--planColor) 62%, transparent);
-          }
-        }
-      `}</style>
 
-      {/* DESNO — addoni + rezultat */}
-      <div className="card p-4">
-        <div className="grid gap-4 md:grid-cols-2">
+      {/* SREDINA — addoni */}
+      <div className="card self-start p-5">
+        <div className="text-sm text-[var(--muted)]">Dodatne opcije</div>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
           {/* kolona 1: prioritetni addoni */}
           <div className="space-y-3">
             {addonKeysForCurrent()
@@ -683,7 +551,7 @@ setEventType(matched as EventType);
                     note={priceNote(effectivePrice(k), k)}
                   />
                   {k === "dontPublish" && (
-                    <div className="mt-1 text-xs text-white/70">
+                    <div className="mt-1 text-xs text-[var(--muted)]">
                       {!addonChecked["dontPublish"]
                         ? "Značilo bi nam da ovu opciju ne uključujete 🙂 (pomaže nam kao preporuka/portfolio)."
                         : "Razumemo i poštujemo 🙂 — ne objavljujemo vaše fotografije u portfoliju/mrežama."}
@@ -703,23 +571,30 @@ setEventType(matched as EventType);
             />
           </div>
         </div>
+      </div>
 
-        {/* rezultat / CTA */}
-        <div className="mt-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <div className="text-sm text-white/70">Orijentaciona cena</div>
-            <div className="mt-1 text-3xl font-semibold">{price.toLocaleString("sr-RS")} €</div>
-            <div className="mt-1 text-xs text-white/60">
-              Prikaz zavisi od izabranog tipa proslave i dodataka. Za preciznu ponudu pošaljite upit.
-            </div>
+      {/* DESNO — rezime (sticky na lg+) */}
+      <aside className="self-start md:col-span-2 lg:col-span-1 lg:sticky lg:top-24">
+        <div className="card p-5">
+          <div className="kicker">Rezime</div>
+          <div className="mt-3 text-sm text-[var(--fg)]">
+            {DISPLAY_PLAN_NAME[plan]} · {eventType}
           </div>
-          <div className="flex gap-3">
-            <a href={continueHref} className="btn btn-primary" title="Nastavi ka formi za upit">
-              Nastavi
+          <div className="mt-4 text-sm text-[var(--muted)]">Orijentaciona cena</div>
+          <div className="mt-1 font-serif text-4xl text-[var(--fg)]">
+            {price.toLocaleString("sr-RS")} €
+          </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Prikaz zavisi od izabranog tipa proslave i dodataka. Za preciznu ponudu pošaljite upit.
+          </p>
+          <div className="divider mt-5" />
+          <div className="mt-5">
+            <a href={continueHref} className="btn btn-primary w-full" title="Nastavite ka formi za upit">
+              Nastavite na upit
             </a>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
@@ -767,14 +642,15 @@ function LabeledToggle({
   label, value, onChange, note,
 }: { label: string; value: boolean; onChange: (v:boolean)=>void; note?: string }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-white/0 px-3 py-2 transition hover:bg-white/[0.03]">
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 transition hover:bg-black/[0.03]">
       <div>
-        <div className="font-medium">{label}</div>
-        {note && <div className="text-xs text-white/70">{note}</div>}
+        <div className="text-sm font-medium text-[var(--fg)]">{label}</div>
+        {note && <div className="text-xs text-[var(--muted)]">{note}</div>}
       </div>
       <input
         type="checkbox"
-        className="h-5 w-5 accent-teal-400"
+        className="h-5 w-5 shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2"
+        style={{ accentColor: "var(--accent-strong)" }}
         checked={value}
         onChange={(e)=>onChange(e.target.checked)}
       />
@@ -788,12 +664,31 @@ function LabeledNumber({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <div className="font-medium">{label}</div>
-        {note && <div className="text-xs text-white/70">{note}</div>}
+        <div className="text-sm font-medium text-[var(--fg)]">{label}</div>
+        {note && <div className="text-xs text-[var(--muted)]">{note}</div>}
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <input type="range" min={min} max={max} step={step} value={value} onChange={(e)=>setValue(Number(e.target.value))} className="w-full" />
-        <input type="number" min={min} max={max} step={step} value={value} onChange={(e)=>setValue(Number(e.target.value))} className="w-20 rounded-md border border-white/10 bg-black/40 px-2 py-1" />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e)=>setValue(Number(e.target.value))}
+          className="w-full focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2"
+          style={{ accentColor: "var(--accent-strong)" }}
+          aria-label={label}
+        />
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e)=>setValue(Number(e.target.value))}
+          className="w-20 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[var(--fg)] focus:border-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-2"
+          aria-label={label}
+        />
       </div>
     </div>
   );

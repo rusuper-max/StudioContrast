@@ -111,7 +111,7 @@ export default function FlipbookOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-[color-mix(in_srgb,var(--bg)_96%,transparent)]"
       role="dialog"
       aria-modal="true"
       aria-label="Foto album"
@@ -137,7 +137,7 @@ export default function FlipbookOverlay({
           onClick={prev}
           disabled={atStart}
           aria-label="Prethodna"
-          className="absolute left-2 top-1/2 z-[901] -translate-y-1/2 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10 disabled:opacity-40 md:left-4"
+          className="absolute left-2 top-1/2 z-[901] -translate-y-1/2 rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] disabled:opacity-40 md:left-4"
         >
           ←
         </button>
@@ -145,7 +145,7 @@ export default function FlipbookOverlay({
           onClick={next}
           disabled={atEnd}
           aria-label="Sledeća"
-          className="absolute right-2 top-1/2 z-[901] -translate-y-1/2 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10 disabled:opacity-40 md:right-4"
+          className="absolute right-2 top-1/2 z-[901] -translate-y-1/2 rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] disabled:opacity-40 md:right-4"
         >
           →
         </button>
@@ -154,7 +154,7 @@ export default function FlipbookOverlay({
           <a
             href={fullHref}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-3 right-3 z-[901] inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10"
+            className="absolute top-3 right-3 z-[901] inline-flex items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)]"
             aria-label="Otvori kompletnu galeriju"
           >
             Otvori sve
@@ -164,7 +164,7 @@ export default function FlipbookOverlay({
         <button
           onClick={onClose}
           aria-label="Zatvori"
-          className="absolute -right-1 -top-10 z-[901] rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10 md:-right-4 md:-top-12"
+          className="absolute -right-1 -top-10 z-[901] rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] md:-right-4 md:-top-12"
         >
           ✕
         </button>
@@ -204,12 +204,12 @@ export default function FlipbookOverlay({
           </div>
         </div>
 
-        <div className="mt-3 text-center text-sm text-white/70">
+        <div className="mt-3 text-center text-sm text-[var(--muted)]">
           Strana {currentSpreadIdx + 1}/{totalSpreads} — ESC, klik pozadina ili ✕ zatvara
         </div>
       </div>
 
-      {/* scoped CSS (isto kao tvoj, samo ostavljeno netaknuto) */}
+      {/* scoped CSS — svetla tema (ivory stranice, ink senke) */}
       <style>{`
         .flipbook-wrapper{
           margin: 0 auto; width: min(96vw, 1200px); height: min(72vh, 760px);
@@ -219,39 +219,39 @@ export default function FlipbookOverlay({
         .base-left{
           position:absolute; top:0; bottom:0; left:0; width:50%;
           background-size: cover; background-position: center;
-          border:1px solid rgba(255,255,255,.08); border-radius: 14px 0 0 14px;
-          box-shadow: inset 0 0 30px rgba(0,0,0,.55); background-color:#0d0d0d; z-index:0;
+          border:1px solid var(--border-strong); border-radius: 14px 0 0 14px;
+          box-shadow: inset 0 0 24px rgba(43,41,37,.08); background-color:var(--surface-2); z-index:0;
         }
         .cover-right{
           position:absolute; top:0; bottom:0; right:0; width:50%;
-          border:1px solid rgba(255,255,255,.08); border-radius: 0 14px 14px 0;
-          background: radial-gradient(120% 120% at 50% 20%, rgba(255,255,255,.02), rgba(0,0,0,.65)), #0b0b0b;
-          box-shadow: inset 0 0 30px rgba(0,0,0,.55); z-index:-1;
+          border:1px solid var(--border-strong); border-radius: 0 14px 14px 0;
+          background: radial-gradient(120% 120% at 50% 20%, rgba(255,255,255,.7), rgba(43,41,37,.05)), var(--surface-2);
+          box-shadow: inset 0 0 24px rgba(43,41,37,.08); z-index:-1;
         }
         .leaf{
           position:absolute; top:0; bottom:0; right:0; width:50%;
           transform-origin:left; transform-style:preserve-3d;
           transition: transform .9s cubic-bezier(.22,.61,.36,1), box-shadow .9s;
-          box-shadow: 0 18px 40px rgba(0,0,0,.35);
+          box-shadow: 0 18px 40px rgba(43,41,37,.14);
         }
         .leaf::after{
           content:""; position:absolute; top:0; bottom:0; left:-1px; width:1px;
-          background: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,0)); opacity:.45;
+          background: linear-gradient(180deg, rgba(43,41,37,.2), rgba(43,41,37,0)); opacity:.5;
         }
         .leaf .face{
           position:absolute; inset:0; background-size:cover; background-position:center;
-          border:1px solid rgba(255,255,255,.08); border-radius:0 14px 14px 0;
-          overflow:hidden; backface-visibility:hidden; background-color:#0e0e0e;
+          border:1px solid var(--border-strong); border-radius:0 14px 14px 0;
+          overflow:hidden; backface-visibility:hidden; background-color:var(--surface-2);
         }
         .leaf .face-front{ transform: rotateY(0deg) translateZ(0.1px); }
         .leaf .face-back { transform: rotateY(180deg) translateZ(0.1px); border-radius:14px 0 0 14px; }
-        .leaf:not(.flipped):hover{ box-shadow:0 28px 70px rgba(0,0,0,.6); }
-        .leaf.flipped{ transform: rotateY(-180deg); box-shadow:0 18px 40px rgba(0,0,0,.25); }
+        .leaf:not(.flipped):hover{ box-shadow:0 24px 60px rgba(43,41,37,.2); }
+        .leaf.flipped{ transform: rotateY(-180deg); box-shadow:0 14px 30px rgba(43,41,37,.1); }
         .leaf:not(.flipped) .face-front::before{
-          content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,.26)); opacity:.6; pointer-events:none;
+          content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(43,41,37,0), rgba(43,41,37,.1)); opacity:.6; pointer-events:none;
         }
         .leaf.flipped .face-back::before{
-          content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(0,0,0,0), rgba(0,0,0,.22)); opacity:.6; pointer-events:none;
+          content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(43,41,37,0), rgba(43,41,37,.08)); opacity:.6; pointer-events:none;
         }
         @media (max-width: 640px){ .flipbook-wrapper{ height: min(64vh, 600px); } }
       `}</style>

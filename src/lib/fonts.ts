@@ -1,22 +1,23 @@
-import { Great_Vibes, Cinzel, Cinzel_Decorative } from "next/font/google";
+import { Playfair_Display, Inter } from "next/font/google";
 
-// Script za svečane natpise (npr. "Portfolio")
-export const fancy = Great_Vibes({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-fancy",
+// Editorial serif — naslovi (h1–h3) i citati
+export const playfair = Playfair_Display({
+  subsets: ["latin", "latin-ext"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
 });
 
-// Klasični serif (ako zatreba u tekstu/headingu)
-export const cinzel = Cinzel({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-cinzel",
+// Sans — telo, navigacija, forme, dugmad
+export const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-sans",
 });
 
-// Ornamental caps za “etikete” (VENČANJE, VERIDBA…)
-export const deco = Cinzel_Decorative({
-  subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-deco",
-});
+/* ------------------------------------------------------------------
+ * LEGACY ALIASI — privremeno, dok area agenti ne uklone stare importe
+ * (fancy / cinzel / deco su ranije bili Great Vibes / Cinzel /
+ * Cinzel Decorative; sada svi pokazuju na Playfair Display).
+ * ------------------------------------------------------------------ */
+export const fancy = playfair;
+export const cinzel = playfair;
+export const deco = playfair;

@@ -2,7 +2,6 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { deco } from "@/lib/fonts";
 import { PLANS, type PlanSlug } from "@/data/packages";
 
 const TS_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
@@ -23,6 +22,10 @@ type FormState = {
 };
 
 const TO_EMAIL = "studio.contrast031@gmail.com";
+
+/* svetli editorial stil za polja forme */
+const INPUT_CLS =
+  "rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--fg)] placeholder:text-[var(--muted)] outline-none transition focus:border-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-[var(--accent-strong)] focus-visible:outline-offset-1";
 
 /* helpers za vreme */
 function clamp(n: number, min: number, max: number) {
@@ -293,119 +296,122 @@ export default function InquiryForm({
 
   return (
     <form onSubmit={submit} className="grid gap-6">
-      <div className="card p-4 md:p-6">
-        <div className={`${deco.className} label-accent`}>Detalji događaja</div>
+      <div className="card p-5 md:p-8">
+        <div className="kicker">Detalji događaja</div>
 
-        <div className="mt-3 grid gap-4 md:grid-cols-2">
+        {/* jedan stubac — mirna editorial forma */}
+        <div className="mt-5 grid gap-4">
           {/* Tip događaja — read-only iz Konfiguratora */}
           <div className="grid gap-1">
-            <label className="text-sm text-white/70">Tip događaja</label>
+            <label className="text-sm text-[var(--muted)]">Tip događaja</label>
             <input
               value={displayType === "tip TBA" ? "— (postavlja se u Konfiguratoru)" : displayType}
               disabled
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white/80"
+              className="rounded-[10px] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[var(--muted)]"
               aria-readonly="true"
             />
           </div>
 
           <div className="grid gap-1">
-            <label className="text-sm text-white/70">Datum *</label>
+            <label className="text-sm text-[var(--muted)]">Datum *</label>
             <input
               type="date"
               value={f.date}
               onChange={onChange("date")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
               required
             />
           </div>
 
-          <div className="grid gap-1">
-            <label className="text-sm text-white/70">Vreme od</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={f.start || ""}
-              onChange={onChange("start")}
-              onBlur={onTimeBlur("start")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
-              placeholder="HH:MM (npr. 22 ili 2230)"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1">
+              <label className="text-sm text-[var(--muted)]">Vreme od</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={f.start || ""}
+                onChange={onChange("start")}
+                onBlur={onTimeBlur("start")}
+                className={INPUT_CLS}
+                placeholder="HH:MM (npr. 22 ili 2230)"
+              />
+            </div>
+
+            <div className="grid gap-1">
+              <label className="text-sm text-[var(--muted)]">Vreme do</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={f.end || ""}
+                onChange={onChange("end")}
+                onBlur={onTimeBlur("end")}
+                className={INPUT_CLS}
+                placeholder="HH:MM (npr. 01 ili 1305)"
+              />
+            </div>
           </div>
 
           <div className="grid gap-1">
-            <label className="text-sm text-white/70">Vreme do</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={f.end || ""}
-              onChange={onChange("end")}
-              onBlur={onTimeBlur("end")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
-              placeholder="HH:MM (npr. 01 ili 1305)"
-            />
-          </div>
-
-          <div className="grid gap-1 md:col-span-2">
-            <label className="text-sm text-white/70">Lokacija *</label>
+            <label className="text-sm text-[var(--muted)]">Lokacija *</label>
             <input
               value={f.location}
               onChange={onChange("location")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
               placeholder="Grad / venue"
               required
             />
           </div>
 
           <div className="grid gap-1">
-            <label className="text-sm text-white/70">Ime i prezime *</label>
+            <label className="text-sm text-[var(--muted)]">Ime i prezime *</label>
             <input
               value={f.name}
               onChange={onChange("name")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
               placeholder="npr. Ana Jovanović"
               required
             />
           </div>
 
           <div className="grid gap-1">
-            <label className="text-sm text-white/70">Email *</label>
+            <label className="text-sm text-[var(--muted)]">Email *</label>
             <input
               type="email"
               value={f.email}
               onChange={onChange("email")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
               placeholder="npr. ana@email.com"
               required
               aria-invalid={!emailValid}
             />
-            {!emailValid && <span className="text-xs text-red-400/90">Unesite validan email.</span>}
+            {!emailValid && <span className="text-xs text-red-700">Unesite validan email.</span>}
           </div>
 
-          <div className="grid gap-1 md:col-span-2">
-            <label className="text-sm text-white/70">Telefon *</label>
+          <div className="grid gap-1">
+            <label className="text-sm text-[var(--muted)]">Telefon *</label>
             <input
               value={f.phone}
               onChange={onChange("phone")}
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
               placeholder="+381 6x xxx xxxx"
               required
               aria-invalid={!phoneValid}
             />
             {!phoneValid && (
-              <span className="text-xs text-red-400/90">
+              <span className="text-xs text-red-700">
                 Unesite validan broj (min. 7 cifara, format po volji).
               </span>
             )}
           </div>
 
-          <div className="grid gap-1 md:col-span-2">
-            <label className="text-sm text-white/70">Poruka</label>
+          <div className="grid gap-1">
+            <label className="text-sm text-[var(--muted)]">Poruka</label>
             <textarea
               rows={5}
               value={f.message}
               onChange={onChange("message")}
               placeholder="Dodatne informacije, satnica, posebne želje…"
-              className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
+              className={INPUT_CLS}
             />
           </div>
         </div>
@@ -417,8 +423,8 @@ export default function InquiryForm({
 
         {/* CTA */}
         <div className="mt-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
-          <div className="text-xs text-white/60">
-            Klikom na „Pošalji upit“ šaljemo podatke direktno na email studija.
+          <div className="text-xs text-[var(--muted)]">
+            Klikom na „Proverite svoj datum“ šaljemo podatke direktno na email studija.
             {sent === "err" && <> Ako imate problem, koristi se backup preko vašeg email klijenta.</>}
           </div>
           <button
@@ -428,12 +434,12 @@ export default function InquiryForm({
             title={
               hasPlan
                 ? canSubmit
-                  ? "Pošalji upit"
+                  ? "Proverite svoj datum"
                   : "Popunite obavezna polja"
                 : "Najpre završite Konfigurator"
             }
           >
-            {sending ? "Slanje…" : sent === "ok" ? "Poslato ✓" : "Pošalji upit"}
+            {sending ? "Slanje…" : sent === "ok" ? "Poslato ✓" : "Proverite svoj datum"}
           </button>
         </div>
       </div>

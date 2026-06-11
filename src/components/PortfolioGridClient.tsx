@@ -49,14 +49,14 @@ export default function PortfolioGridClient() {
             </button>
           );
         })}
-        <span className="mx-2 h-6 w-px bg-white/15" />
+        <span className="mx-2 h-6 w-px bg-[var(--border-strong)]" />
         <button
           onClick={() => setAlbumOpen(true)}
           className="btn btn-outline"
           aria-haspopup="dialog"
           aria-expanded={albumOpen}
         >
-          Foto album (flip)
+          Prelistaj kao album
         </button>
       </div>
 
@@ -64,8 +64,8 @@ export default function PortfolioGridClient() {
       <div className="mt-8">
         <GalleryGrid items={filtered.map((it) => ({ src: it.src, alt: it.alt }))} />
         {filtered.length === 0 && (
-          <p className="mt-6 text-center text-sm text-white/60">
-            Za ovu kategoriju još nemamo primere — uskoro dodajemo.
+          <p className="mt-6 text-center text-sm text-[var(--muted)]">
+            Za ovu kategoriju još nemamo primere — uskoro ih dodajemo.
           </p>
         )}
       </div>

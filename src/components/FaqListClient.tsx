@@ -32,7 +32,7 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
             key={f.id}
             id={f.id}
             className={[
-              "faq-item group mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/40",
+              "faq-item group mb-3 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]",
               "scroll-mt-24 md:scroll-mt-28",
               isActive ? "is-active" : "",
             ].join(" ")}
@@ -53,7 +53,7 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
             }}
           >
             <summary
-              className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3"
+              className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent-strong)]"
               onClick={() => {
                 setActiveId(f.id);
                 if (typeof window !== "undefined") {
@@ -61,12 +61,22 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
                 }
               }}
             >
-              <span className="font-medium">{f.q}</span>
-              <span className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-xs text-white/70 transition group-open:rotate-180">
+              <span
+                className={[
+                  "font-medium transition-colors",
+                  isActive ? "text-[var(--fg)]" : "text-[var(--fg)]/80",
+                ].join(" ")}
+              >
+                {f.q}
+              </span>
+              <span
+                aria-hidden="true"
+                className="shrink-0 rounded-full border border-[var(--border-strong)] px-2 py-0.5 text-xs text-[var(--muted)] transition group-open:rotate-180"
+              >
                 ▾
               </span>
             </summary>
-            <div className="px-4 pb-4 pt-1 text-white/85">{f.aJSX}</div>
+            <div className="px-4 pb-4 pt-1 leading-relaxed text-[var(--muted)]">{f.aJSX}</div>
           </details>
         );
       })}

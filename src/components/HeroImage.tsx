@@ -4,37 +4,43 @@ import Container from "./Container";
 export default function HeroImage() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden bg-[var(--surface-2)]"
       style={{
         backgroundImage: "url(/hero/hero.webp)", // stavi sliku u: public/hero/hero.webp
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      {/* overlay radi čitljivosti */}
+      {/* Blagi tamni gradijent — samo pri dnu, radi čitljivosti teksta */}
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,.22) 0%, rgba(0,0,0,.55) 55%, rgba(0,0,0,.78) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.10) 50%, rgba(0,0,0,.38) 100%)",
         }}
       />
 
       <Container className="relative z-10 flex min-h-[78vh] flex-col justify-end pb-14 md:min-h-[86vh] md:pb-20">
-        <span className="kicker">Foto + video za venčanja i proslave</span>
+        <span className="block text-[11px] uppercase tracking-[0.25em] text-white/80">
+          Fotografija i film venčanja
+        </span>
 
-        <h1 className="mt-4 font-serif text-[clamp(34px,6vw,66px)] font-bold leading-tight">
-          Uhvatimo trenutke <span className="text-[var(--accent)]">koji ostaju zauvek</span>
-        </h1>
+        <h1 className="mt-4 text-white">Priče koje ostaju zauvek.</h1>
 
-        <p className="lead mt-3 max-w-xl">
-          Prirodno i nenametljivo. Isporučujemo i kolor i crno-belo — onako kako najbolje
-          priča vašu priču.
+        <p className="mt-4 max-w-xl text-base text-white/85 md:text-lg">
+          Fotografija i film venčanja — Užice, Zlatibor i cela Srbija.
         </p>
 
-        <div className="mt-6 flex gap-3">
-          <Link href="/portfolio" className="btn btn-outline">Portfolio</Link>
-          <Link href="/kontakt" className="btn btn-primary">Pošalji upit</Link>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link href="/upit" className="btn btn-primary">
+            Proverite svoj datum
+          </Link>
+          <Link
+            href="/portfolio"
+            className="btn border border-white/70 text-white transition hover:border-white hover:bg-white/10 focus-visible:outline-white"
+          >
+            Pogledajte priče
+          </Link>
         </div>
       </Container>
     </section>
