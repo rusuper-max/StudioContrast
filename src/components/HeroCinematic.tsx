@@ -39,8 +39,38 @@ export default function HeroCinematic({
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+
+    // Safari: `muted` mora da postoji i kao ATRIBUT (React postavlja samo
+    // svojstvo). Bez toga autoplay ume da bude odbijen, a video ostane
+    // zamrznut na prvom kadru dok se stranica ne osveži.
+    if (muted) v.setAttribute("muted", "");
+    else v.removeAttribute("muted");
     v.muted = muted;
-    v.play().catch(() => {});
+
+    let cancelled = false;
+    const tryPlay = () => {
+      if (cancelled || !v.paused) return;
+      // Odbijanje je normalno (npr. Low Power Mode) — tada ostaje poster,
+      // koji je isti kadar, pa izgleda namerno. Ali NE odustajemo posle
+      // prvog pokušaja, jer je najčešći uzrok samo „još nema podataka“.
+      v.play().catch(() => {});
+    };
+
+    tryPlay();
+
+    // Ponovi kada stigne dovoljno podataka i kada se korisnik vrati na tab.
+    const events = ["loadeddata", "canplay", "canplaythrough", "stalled", "suspend"];
+    for (const e of events) v.addEventListener(e, tryPlay);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tryPlay();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      for (const e of events) v.removeEventListener(e, tryPlay);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [muted, showVideo]);
 
   return (
