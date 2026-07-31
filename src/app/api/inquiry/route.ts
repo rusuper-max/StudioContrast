@@ -92,6 +92,24 @@ function prettyLabel(key: string) {
  * Tačke 3–4 zavise od /api/inquiry/addons; ako on padne, mejl i dalje
  * sadrži 1) i 2) — nikad se ne šalje bez sadržaja paketa.
  */
+/**
+ * Naziv vida proslave iz tabele ne mora da se poklopi sa ključem u
+ * planIncludes (npr. tabela: "Krštenje", kod: "Krštenja"). Poredimo bez
+ * dijakritike, malim slovima i bez završnog "a/e/i".
+ */
+const EVENT_KEYS: EventType[] = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenja"];
+function matchEventType(raw: string): EventType | null {
+  const simplify = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "") // kombinujući znaci (č, ć, š, ž…)
+      .toLowerCase()
+      .trim()
+      .replace(/[aei]$/, ""); // Krštenje/Krštenja, Rođendan/Rođendani…
+  const target = simplify(raw);
+  return EVENT_KEYS.find((k) => simplify(k) === target) ?? null;
+}
+
 async function loadPackageContents(
   origin: string,
   eventType: string,
@@ -101,7 +119,8 @@ async function loadPackageContents(
   if (!plan) return out;
 
   // 1) + 2) statički izvori — uvek dostupni
-  out.base = getPlanIncludes(eventType as EventType, plan);
+  const eventKey = matchEventType(eventType);
+  out.base = eventKey ? getPlanIncludes(eventKey, plan) : [];
   const marketing = HOME_PACKAGES[plan]?.bullets ?? [];
   for (const b of marketing) {
     if (!out.base.some((x) => x.toLowerCase() === b.toLowerCase())) out.base.push(b);
