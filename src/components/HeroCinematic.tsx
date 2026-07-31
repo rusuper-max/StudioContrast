@@ -14,6 +14,8 @@ type Props = {
   posterMobile?: string;
 };
 
+const VIDEO_SRC = "/hero/hero.mp4";
+
 export default function HeroCinematic({
   ctaHref = "/upit",
   poster = "/home/hero-poster.jpg",
@@ -36,40 +38,56 @@ export default function HeroCinematic({
     };
   }, []);
 
+  /**
+   * Safari odlučuje da li sme autoplay U TRENUTKU kada element dobije izvor.
+   * Zato se `muted`/`playsinline` moraju postaviti kao ATRIBUTI pre nego što
+   * se `src` uopšte zakači (React postavlja samo svojstva, a `useEffect` je
+   * već prekasno — element je tada ubačen i učitavanje je počelo).
+   * Otud je video ranije stajao na prvom kadru dok se stranica ne osveži.
+   */
+  const attachVideo = (v: HTMLVideoElement | null) => {
+    videoRef.current = v;
+    if (!v || v.dataset.scReady === "1") return;
+    v.dataset.scReady = "1";
+
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
+    v.setAttribute("webkit-playsinline", "");
+    v.muted = true;
+    v.setAttribute("src", VIDEO_SRC); // izvor tek POSLE atributa
+    v.load();
+    v.play().catch(() => {});
+  };
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-
-    // Safari: `muted` mora da postoji i kao ATRIBUT (React postavlja samo
-    // svojstvo). Bez toga autoplay ume da bude odbijen, a video ostane
-    // zamrznut na prvom kadru dok se stranica ne osveži.
-    if (muted) v.setAttribute("muted", "");
-    else v.removeAttribute("muted");
     v.muted = muted;
 
     let cancelled = false;
     const tryPlay = () => {
       if (cancelled || !v.paused) return;
-      // Odbijanje je normalno (npr. Low Power Mode) — tada ostaje poster,
-      // koji je isti kadar, pa izgleda namerno. Ali NE odustajemo posle
-      // prvog pokušaja, jer je najčešći uzrok samo „još nema podataka“.
+      // Odbijanje je moguće (npr. Low Power Mode) — tada ostaje poster, koji
+      // je isti kadar, pa deluje namerno. Ali ne odustajemo posle prvog puta.
       v.play().catch(() => {});
     };
 
     tryPlay();
 
-    // Ponovi kada stigne dovoljno podataka i kada se korisnik vrati na tab.
-    const events = ["loadeddata", "canplay", "canplaythrough", "stalled", "suspend"];
+    const events = ["loadedmetadata", "loadeddata", "canplay", "canplaythrough", "stalled", "suspend"];
     for (const e of events) v.addEventListener(e, tryPlay);
     const onVisible = () => {
       if (document.visibilityState === "visible") tryPlay();
     };
     document.addEventListener("visibilitychange", onVisible);
+    // Poslednja mreža: ako Safari i dalje stoji, probaj još par puta.
+    const timers = [400, 1200, 3000, 6000].map((ms) => window.setTimeout(tryPlay, ms));
 
     return () => {
       cancelled = true;
       for (const e of events) v.removeEventListener(e, tryPlay);
       document.removeEventListener("visibilitychange", onVisible);
+      timers.forEach(window.clearTimeout);
     };
   }, [muted, showVideo]);
 
@@ -92,8 +110,11 @@ export default function HeroCinematic({
         />
       </picture>
       {showVideo && (
+        // Bez CSS filtera: gradacija je upečena u sam snimak. Filter na
+        // <video> u Safariju gura element na drugu kompozitnu putanju.
+        // Izvor se ne postavlja ovde — dodaje ga `attachVideo` (vidi gore).
         <video
-          ref={videoRef}
+          ref={attachVideo}
           className="absolute inset-0 h-full w-full object-cover"
           autoPlay
           muted
@@ -101,10 +122,7 @@ export default function HeroCinematic({
           playsInline
           preload="auto"
           poster={poster}
-          style={{ filter: "saturate(0.55) contrast(1.05)" }}
-        >
-          <source src="/hero/hero.mp4" type="video/mp4" />
-        </video>
+        />
       )}
 
       {/* Scrim — jak gore (čitljiv logo i na svetlom nebu), jak dole (naslov) */}
@@ -178,11 +196,12 @@ export default function HeroCinematic({
       </div>
 
       <style>{`
-        /* Mobilni: crno-bela fotografija. md+: isti filter kao video,
-           da zamena poster→video ne bude vidljiva. */
+        /* Mobilni: crno-bela fotografija (filter na <img> je bezbedan).
+           md+: poster je već gradiran kadar iz videa — bez filtera, pa je
+           prelaz poster→video piksel u piksel isti. */
         .hero-poster { filter: grayscale(1) contrast(1.06); }
         @media (min-width: 768px) {
-          .hero-poster { filter: saturate(0.55) contrast(1.05); }
+          .hero-poster { filter: none; }
         }
         @keyframes heroline {
           0% { transform: translateX(-100%); }
