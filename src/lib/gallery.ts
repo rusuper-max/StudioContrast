@@ -7,7 +7,6 @@ import crypto from "crypto";
 
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
 const CLIENTS_ROOT = process.env.CLOUDINARY_CLIENTS_ROOT || "clients";
-const PASSWORD_SALT = process.env.ADMIN_SECRET || "studio-contrast-salt";
 
 // Configure cloudinary
 cloudinary.config({
@@ -63,18 +62,114 @@ export async function generateUniqueSlug(maxAttempts = 5): Promise<string> {
   return generateSlug(12);
 }
 
-// Secure password hashing using PBKDF2
-export function hashPassword(password: string): string {
-  const hash = crypto
-    .pbkdf2Sync(password, PASSWORD_SALT, 10000, 32, "sha256")
+// --- Client gallery password hashing ------------------------------------
+//
+// Three stored formats exist. Only the newest is ever written; the other two
+// are verify-only so that passwords already handed to clients keep working.
+//
+//   h_<base36>                           legacy, non-cryptographic
+//   p_<hashHex>                          PBKDF2, one process-wide salt
+//   p2_<iterations>_<saltHex>_<hashHex>  PBKDF2, per-password random salt
+//
+// The process-wide salt of the `p_` era used to be read straight from
+// ADMIN_SECRET, which tied the admin bearer token to every stored hash:
+// rotating the token silently invalidated every client password. That salt
+// now lives in its own variable, GALLERY_PASSWORD_SALT, with ADMIN_SECRET
+// still accepted as a second candidate so deployments predating the split
+// keep verifying.
+//
+// Deployment notes:
+//   - Set GALLERY_PASSWORD_SALT to the ADMIN_SECRET value that was in effect
+//     when the `p_` hashes were created, and ADMIN_SECRET becomes free to
+//     rotate on its own schedule.
+//   - `p2_` hashes carry their own salt and ignore both variables. Once every
+//     gallery has been re-saved (see needsPasswordUpgrade), GALLERY_PASSWORD_SALT
+//     can be removed entirely.
+//   - There is deliberately no hardcoded default salt. A missing variable used
+//     to fall back to a constant published in this repo, which quietly reduced
+//     every hash to an unsalted one; it now throws instead.
+
+const PBKDF2_ITERATIONS = 600_000;
+const PBKDF2_KEYLEN = 32;
+const PBKDF2_DIGEST = "sha256";
+
+// Fixed parameters of the `p_` format - never change these, they are what the
+// already-stored hashes were derived with.
+const LEGACY_GLOBAL_ITERATIONS = 10000;
+
+// Upper bound on the iteration count read out of a stored `p2_` hash, so a
+// corrupted or tampered metadata value cannot pin a request on the CPU.
+const MAX_STORED_ITERATIONS = 5_000_000;
+
+// Candidate salts for the `p_` format, in priority order. Both are tried
+// rather than only the first: during the migration GALLERY_PASSWORD_SALT is
+// filled in by hand, and a value that does not exactly match the ADMIN_SECRET
+// the hashes were built with would otherwise lock every client out. A second
+// 10k-iteration derivation costs ~1ms and lets the untouched ADMIN_SECRET
+// still let them in - at which point the hash is upgraded and the ambiguity
+// disappears on its own.
+function legacyGlobalSalts(): string[] {
+  const candidates = [
+    process.env.GALLERY_PASSWORD_SALT,
+    process.env.ADMIN_SECRET,
+  ].filter((s): s is string => !!s);
+
+  if (candidates.length === 0) {
+    throw new Error(
+      "Cannot verify a legacy `p_` gallery password: neither GALLERY_PASSWORD_SALT " +
+        "nor ADMIN_SECRET is set. Set GALLERY_PASSWORD_SALT to the ADMIN_SECRET value " +
+        "that was in use when the gallery password was created."
+    );
+  }
+  return [...new Set(candidates)];
+}
+
+function derive(password: string, salt: string, iterations: number): string {
+  return crypto
+    .pbkdf2Sync(password, salt, iterations, PBKDF2_KEYLEN, PBKDF2_DIGEST)
     .toString("hex");
-  return "p_" + hash;
+}
+
+function timingSafeEqualHex(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "hex");
+  const bufB = Buffer.from(b, "hex");
+  if (bufA.length === 0 || bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Secure password hashing using PBKDF2 with a fresh random salt per password
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = derive(password, salt, PBKDF2_ITERATIONS);
+  return `p2_${PBKDF2_ITERATIONS}_${salt}_${hash}`;
 }
 
 export function verifyPassword(input: string, stored: string): boolean {
-  // Support both old (h_) and new (p_) hash formats for backward compatibility
+  // Current format - salt and cost travel with the hash.
+  if (stored.startsWith("p2_")) {
+    const [iterStr, salt, hash] = stored.slice(3).split("_");
+    if (!iterStr || !salt || !hash) return false;
+    const iterations = Number(iterStr);
+    if (
+      !Number.isInteger(iterations) ||
+      iterations < 1 ||
+      iterations > MAX_STORED_ITERATIONS
+    ) {
+      return false;
+    }
+    return timingSafeEqualHex(derive(input, salt, iterations), hash);
+  }
+
+  // Legacy format - PBKDF2 against a process-wide salt.
+  if (stored.startsWith("p_")) {
+    const expected = stored.slice(2);
+    return legacyGlobalSalts().some((salt) =>
+      timingSafeEqualHex(derive(input, salt, LEGACY_GLOBAL_ITERATIONS), expected)
+    );
+  }
+
+  // Legacy format - non-cryptographic hash that predates PBKDF2.
   if (stored.startsWith("h_")) {
-    // Old weak hash - still verify but it works
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       const char = input.charCodeAt(i);
@@ -83,8 +178,14 @@ export function verifyPassword(input: string, stored: string): boolean {
     }
     return stored === "h_" + Math.abs(hash).toString(36);
   }
-  // New secure hash
-  return hashPassword(input) === stored;
+
+  return false;
+}
+
+// True when a stored hash is in one of the verify-only legacy formats and
+// should be rewritten the next time the plaintext password is available.
+export function needsPasswordUpgrade(stored: string): boolean {
+  return !stored.startsWith("p2_");
 }
 
 // Build optimized Cloudinary URLs

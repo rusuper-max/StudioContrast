@@ -1,6 +1,12 @@
 // src/app/api/gallery/verify/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getGalleryMeta, verifyPassword } from "@/lib/gallery";
+import {
+  getGalleryMeta,
+  verifyPassword,
+  needsPasswordUpgrade,
+  hashPassword,
+  saveGalleryMeta,
+} from "@/lib/gallery";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +23,22 @@ export async function POST(req: NextRequest) {
     }
 
     if (verifyPassword(password, gallery.password)) {
+      // The client just proved they know the plaintext, so this is the one
+      // moment a legacy hash can be re-derived into the current format. Best
+      // effort only - a failed rewrite must not turn a valid login into an error.
+      if (needsPasswordUpgrade(gallery.password)) {
+        try {
+          await saveGalleryMeta(gallery.slug, {
+            name: gallery.name,
+            clientName: gallery.clientName,
+            password: hashPassword(password),
+            active: gallery.active,
+            createdAt: gallery.createdAt,
+          });
+        } catch (err) {
+          console.error("Error upgrading gallery password hash:", err);
+        }
+      }
       return NextResponse.json({ success: true });
     }
 
