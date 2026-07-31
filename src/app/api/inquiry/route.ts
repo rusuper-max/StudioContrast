@@ -2,6 +2,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { getPlanIncludes } from "@/data/planIncludes";
 import { HOME_PACKAGES } from "@/data/homePackages";
 import type { PlanSlug } from "@/data/packages";
@@ -180,6 +181,13 @@ function extractAddons(body: any): string[] {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // **Turnstile** — pre svega ostalog: klijentska provera (canSubmit) ne
+    // štiti rutu od direktnog POST-a.
+    const captcha = await verifyTurnstile(req, body?.tsToken);
+    if (!captcha.ok) {
+      return new NextResponse(captcha.message, { status: captcha.status });
+    }
 
     // SMTP
     const transporter = nodemailer.createTransport({
