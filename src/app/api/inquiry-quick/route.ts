@@ -2,17 +2,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export const runtime = "nodejs";
-
-type VerifyResp = {
-  success: boolean;
-  challenge_ts?: string;
-  hostname?: string;
-  "error-codes"?: string[];
-  action?: string;
-  cdata?: string;
-};
 
 type QuickBody = {
   type?: string;
@@ -24,16 +16,6 @@ type QuickBody = {
   tsToken?: string; // Turnstile response token sa klijenta
 };
 
-/** IP bez any – čita standardne headere */
-function getClientIp(req: NextRequest): string | undefined {
-  return (
-    req.headers.get("cf-connecting-ip") ??
-    req.headers.get("x-real-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    undefined
-  );
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as QuickBody;
@@ -44,29 +26,9 @@ export async function POST(req: NextRequest) {
     }
 
     // **Turnstile**
-    const token = String(body?.tsToken || "").trim();
-    if (!token) return new NextResponse("Missing captcha", { status: 400 });
-
-    const secret = process.env.TURNSTILE_SECRET_KEY!;
-    const ip = getClientIp(req);
-
-    const verifyRes = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          secret,
-          response: token,
-          ...(ip ? { remoteip: ip } : {}),
-        }),
-      }
-    );
-
-    const verifyJson = (await verifyRes.json()) as VerifyResp;
-    if (!verifyJson.success) {
-      const code = verifyJson["error-codes"]?.join(", ") || "unknown_error";
-      return new NextResponse(`Captcha failed: ${code}`, { status: 400 });
+    const captcha = await verifyTurnstile(req, body?.tsToken);
+    if (!captcha.ok) {
+      return new NextResponse(captcha.message, { status: captcha.status });
     }
 
     // 2) Minimalna validacija podataka
