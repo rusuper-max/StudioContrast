@@ -83,11 +83,16 @@ export default function FlipbookOverlay({
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft")  prev();
     };
-    const prevOverflow = document.body.style.overflow;
+    // Skrol-kontejner je <html> — zaključavanje samo <body> propušta skrol.
+    const html = document.documentElement;
+    const prevHtml = html.style.overflow;
+    const prevBody = document.body.style.overflow;
+    html.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      html.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose, maxFlips]);
@@ -164,7 +169,9 @@ export default function FlipbookOverlay({
         <button
           onClick={onClose}
           aria-label="Zatvori"
-          className="absolute -right-1 -top-10 z-[901] rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] md:-right-4 md:-top-12"
+          // right-1 (a ne -right-1): na 390px je dugme izlazilo ~4px van
+          // ekrana pa je glavni način zatvaranja bio odsečen.
+          className="absolute right-1 -top-10 z-[901] rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--fg)] transition hover:border-[var(--accent-strong)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)] md:-right-4 md:-top-12"
         >
           ✕
         </button>

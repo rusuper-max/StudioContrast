@@ -7,13 +7,15 @@ import Container from "@/components/Container";
 import Reveal from "@/components/Reveal";
 import Link from "next/link";
 import FaqListClient, { type FaqLite } from "@/components/FaqListClient";
+import { absUrl, breadcrumbJsonLd, pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQ | Studio Contrast",
+export const metadata: Metadata = pageMeta({
+  title: "Česta pitanja o fotografisanju venčanja",
+  ogTitle: "Česta pitanja o fotografisanju venčanja | Studio Contrast",
   description:
-    "Odgovori na česta pitanja: uslovi plaćanja, rok isporuke, broj fotografija, RAW fajlovi, broj fotografa, dodatne usluge, putni troškovi, odlaganje/otkazivanje i drugo.",
-  alternates: { canonical: "/faq" },
-};
+    "Kako rezervisati termin, uslovi plaćanja, rok isporuke, broj fotografija, RAW fajlovi, putni troškovi i otkazivanje — odgovori na najčešća pitanja pre snimanja.",
+  path: "/faq",
+});
 
 type FaqItem = {
   id: string;
@@ -245,12 +247,20 @@ export default function FAQPage() {
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    url: absUrl("/faq"),
+    inLanguage: "sr-RS",
     mainEntity: FAQ.map((item) => ({
       "@type": "Question",
       name: item.q,
+      url: `${absUrl("/faq")}#${item.id}`,
       acceptedAnswer: { "@type": "Answer", text: item.aText },
     })),
   };
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Početna", path: "/" },
+    { name: "Česta pitanja", path: "/faq" },
+  ]);
 
   const lite: FaqLite[] = FAQ.map(({ id, q, aJSX }) => ({ id, q, aJSX }));
 
@@ -315,6 +325,7 @@ export default function FAQPage() {
       </main>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <Footer />
     </>
   );

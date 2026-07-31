@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 type Img = string | { src: string; alt?: string };
@@ -34,6 +34,8 @@ export default function Lightbox({
   const prev = () => setIdx((i) => (i > 0 ? i - 1 : normalized.length - 1));
   const next = () => setIdx((i) => (i < normalized.length - 1 ? i + 1 : 0));
 
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") prev();
@@ -44,9 +46,53 @@ export default function Lightbox({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, normalized.length]);
 
+  // Modal higijena: zaključaj skrol pozadine (inače se stranica ispod
+  // pomeri dok je lightbox otvoren), uvedi fokus u dijalog i vrati ga
+  // na element sa kog je otvoren.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    // Skrol-kontejner na ovom sajtu je <html>, pa zaključavanje samo <body>
+    // ne zadržava stranicu (propuštalo je ~95px).
+    const html = document.documentElement;
+    const prevHtml = html.style.overflow;
+    const prevBody = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+    return () => {
+      html.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+      opener?.focus?.();
+    };
+  }, []);
+
+  // Drži Tab unutar dijaloga — `aria-modal` sam po sebi ne zadržava fokus.
+  const onKeyDownTrap = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab") return;
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusable = [...root.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")].filter(
+      (el) => el.offsetWidth > 0 || el.offsetHeight > 0
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === root)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--bg)_96%,transparent)]"
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDownTrap}
+      className="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--bg)_96%,transparent)] focus:outline-none"
       role="dialog"
       aria-modal="true"
       aria-label="Uvećan prikaz fotografije"

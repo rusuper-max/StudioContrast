@@ -7,12 +7,15 @@ import Container from "@/components/Container";
 import Reveal from "@/components/Reveal";
 import PricingConfigurator from "@/components/PricingConfigurator";
 import { type PlanSlug } from "@/data/packages";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
-  title: "Ponude | Studio Contrast",
+export const metadata = pageMeta({
+  title: "Paketi i cene fotografisanja venčanja",
+  ogTitle: "Paketi i cene fotografisanja venčanja | Studio Contrast",
   description:
-    "Tri paketa uz konfigurator dodataka — izračunajte orijentacionu cenu i pošaljite upit.",
-};
+    "Paketi za fotografisanje i snimanje venčanja, svadbi i slavlja, uz konfigurator dodataka. Izračunajte orijentacionu cenu i pošaljite upit — odgovaramo za 24h.",
+  path: "/ponude",
+});
 
 type Props = {
   searchParams?: Promise<{ plan?: string; type?: string }>;

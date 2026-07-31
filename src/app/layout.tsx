@@ -2,41 +2,59 @@ import type { Metadata } from "next";
 import "./globals.css";
 import TurnstileLoader from "@/components/TurnstileLoader";
 import { fraunces, sans } from "@/lib/fonts";
+import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL, siteJsonLd } from "@/lib/seo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const SITE_NAME = "Studio Contrast";
 const ICON_VER = "20251024b";
 
-const SITE_DESCRIPTION =
-  "Fotografija i film venčanja — Užice, Zlatibor i cela Srbija. Prirodni trenuci i istinite emocije.";
+/** Naslov početne — root segment ne primenjuje sopstveni template,
+ *  pa ovde stoji pun naslov sa lokalnim ključnim rečima. */
+const HOME_TITLE = "Svadbeni fotograf Užice i Zlatibor | Studio Contrast";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  title: { default: HOME_TITLE, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: `${SITE_URL}/onama` }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "Fotografija",
   keywords: [
-    "fotografisanje Užice",
+    "svadbeni fotograf Užice",
     "fotograf Užice",
-    "wedding photographer Serbia",
-    "portraits Zlatibor",
-    "fotograf Srbija",
+    "fotograf Zlatibor",
+    "snimanje venčanja",
+    "fotografisanje venčanja Srbija",
+    "foto i video studio Užice",
   ],
   openGraph: {
     type: "website",
-    url: SITE_URL,
+    locale: "sr_RS",
+    url: `${SITE_URL}/`,
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: HOME_TITLE,
     description: SITE_DESCRIPTION,
-    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: SITE_NAME }],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: HOME_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/og.jpg"],
+    images: [OG_IMAGE.url],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      // Fotografski sajt — velike sličice u Google Images/Discover su ključne.
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   icons: {
     icon: [{ url: `/icon.png?v=${ICON_VER}`, type: "image/png", sizes: "any" }],
     shortcut: [{ url: `/icon.png?v=${ICON_VER}` }],
@@ -44,29 +62,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const orgJsonLd = {
-    "@context": "https://schema.org",
-    "@type": ["ProfessionalService", "LocalBusiness"],
-    name: SITE_NAME,
-    url: SITE_URL,
-    image: `${SITE_URL}/og.jpg`,
-    description:
-      "Fotografija i film venčanja — prirodni trenuci i istinite emocije. Užice, Zlatibor i cela Srbija.",
-    areaServed: ["Užice", "Zlatibor", "Srbija", "Serbia"],
-    priceRange: "€€",
-    // PLACEHOLDER — telephone: dodati pravi broj telefona studija, npr. "+381 6x xxx xxxx"
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "Carinska 4",
-      addressCountry: "RS",
-      addressLocality: "Užice",
-      postalCode: "31000",
-    },
-    sameAs: [],
-  };
+  const orgJsonLd = siteJsonLd();
 
   return (
-    <html lang="sr" className={`${fraunces.variable} ${sans.variable}`}>
+    // data-scroll-behavior: Next 15 traži eksplicitnu potvrdu za
+    // `scroll-behavior:smooth` na <html> (inače upozorenje u konzoli).
+    <html
+      // sr-Latn-RS: sajt je na srpskom, latiničnim pismom — precizniji
+      // signal za Google od golog "sr" (koje ne razlikuje ćirilicu/latinicu).
+      lang="sr-Latn-RS"
+      data-scroll-behavior="smooth"
+      className={`${fraunces.variable} ${sans.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"

@@ -81,7 +81,11 @@ function normType(v?: string): TypeOption | undefined {
     drugo: "Drugo",
   };
 
-  return MAP[key] || (TYPES as readonly string[]).includes(s) ? (s as TypeOption) : undefined;
+  // Pažnja: `a || b ? x : y` se parsira kao `(a || b) ? x : y` — ranije je
+  // zbog toga vraćan sirovi unos ("portret") umesto kanonskog ("Studio").
+  const mapped = MAP[key];
+  if (mapped) return mapped;
+  return (TYPES as readonly string[]).includes(s) ? (s as TypeOption) : undefined;
 }
 
 function prettyLabel(key: string) {
@@ -146,8 +150,23 @@ export default function InquiryForm({
 
   // Turnstile
   const [tsToken, setTsToken] = useState("");
+  // Ako se Cloudflare widget ne učita (ad-blocker, ispad CF-a, nepodešen
+  // ključ), forma je ranije ostajala TRAJNO neupotrebljiva uz poruku
+  // „Popunite obavezna polja“ — upit bi se tiho izgubio.
+  const [tsBlocked, setTsBlocked] = useState(false);
   const widgetRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!TS_SITE_KEY) {
+      setTsBlocked(true);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      if (!window.turnstile) setTsBlocked(true);
+    }, 6000);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(f.email.trim()), [f.email]);
   const phoneDigits = useMemo(() => f.phone.replace(/\D+/g, ""), [f.phone]);
@@ -305,8 +324,9 @@ export default function InquiryForm({
         <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
           {/* Tip događaja — read-only iz Konfiguratora */}
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Tip događaja</label>
+            <label htmlFor="inq-type" className={LABEL_CLS}>Tip događaja</label>
             <input
+              id="inq-type"
               value={displayType === "tip TBA" ? "— (postavlja se u Konfiguratoru)" : displayType}
               disabled
               className={`${INPUT_CLS} !border-b-[var(--border)] text-[var(--muted)]`}
@@ -315,8 +335,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Datum *</label>
+            <label htmlFor="inq-date" className={LABEL_CLS}>Datum *</label>
             <input
+              id="inq-date"
               type="date"
               value={f.date}
               onChange={onChange("date")}
@@ -326,8 +347,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Vreme od</label>
+            <label htmlFor="inq-start" className={LABEL_CLS}>Vreme od</label>
             <input
+              id="inq-start"
               type="text"
               inputMode="numeric"
               value={f.start || ""}
@@ -339,8 +361,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Vreme do</label>
+            <label htmlFor="inq-end" className={LABEL_CLS}>Vreme do</label>
             <input
+              id="inq-end"
               type="text"
               inputMode="numeric"
               value={f.end || ""}
@@ -352,8 +375,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1 md:col-span-2">
-            <label className={LABEL_CLS}>Lokacija *</label>
+            <label htmlFor="inq-location" className={LABEL_CLS}>Lokacija *</label>
             <input
+              id="inq-location"
               value={f.location}
               onChange={onChange("location")}
               className={INPUT_CLS}
@@ -371,8 +395,9 @@ export default function InquiryForm({
 
         <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Ime i prezime *</label>
+            <label htmlFor="inq-name" className={LABEL_CLS}>Ime i prezime *</label>
             <input
+              id="inq-name"
               value={f.name}
               onChange={onChange("name")}
               className={INPUT_CLS}
@@ -382,8 +407,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1">
-            <label className={LABEL_CLS}>Telefon *</label>
+            <label htmlFor="inq-phone" className={LABEL_CLS}>Telefon *</label>
             <input
+              id="inq-phone"
               value={f.phone}
               onChange={onChange("phone")}
               onBlur={() => setPhoneTouched(true)}
@@ -400,8 +426,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1 md:col-span-2">
-            <label className={LABEL_CLS}>Email *</label>
+            <label htmlFor="inq-email" className={LABEL_CLS}>Email *</label>
             <input
+              id="inq-email"
               type="email"
               value={f.email}
               onChange={onChange("email")}
@@ -417,8 +444,9 @@ export default function InquiryForm({
           </div>
 
           <div className="grid gap-1 md:col-span-2">
-            <label className={LABEL_CLS}>Poruka</label>
+            <label htmlFor="inq-message" className={LABEL_CLS}>Poruka</label>
             <textarea
+              id="inq-message"
               rows={4}
               value={f.message}
               onChange={onChange("message")}
@@ -429,10 +457,26 @@ export default function InquiryForm({
         </div>
       </fieldset>
 
-      {/* Turnstile widget */}
-      <div className="-mt-4">
+      {/* Turnstile widget — prostor se rezerviše samo dok se očekuje */}
+      <div className={tsBlocked ? "hidden" : "-mt-4"}>
         <div ref={widgetRef} className="min-h-[70px]" />
       </div>
+
+      {/* Widget nedostupan → ponudi direktan kontakt umesto ćutanja */}
+      {tsBlocked && (
+        <div className="-mt-4 border-l-2 border-[var(--accent)] pl-4 text-sm leading-relaxed text-[var(--muted)]">
+          Sigurnosna provera trenutno nije dostupna (moguće je blokira dodatak u
+          pregledaču). Pošaljite nam upit direktno:{" "}
+          <a href="mailto:studio.contrast031@gmail.com" className="link text-[var(--accent-strong)]">
+            studio.contrast031@gmail.com
+          </a>{" "}
+          ili{" "}
+          <a href="tel:+381659869105" className="link text-[var(--accent-strong)]">
+            +381 65 986 9105
+          </a>
+          .
+        </div>
+      )}
 
       {/* CTA */}
       <div className="-mt-4 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -445,11 +489,15 @@ export default function InquiryForm({
           disabled={!canSubmit || sending}
           className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-70"
           title={
-            hasPlan
-              ? canSubmit
+            !hasPlan
+              ? "Najpre završite Konfigurator"
+              : canSubmit
                 ? "Proverite svoj datum"
-                : "Popunite obavezna polja"
-              : "Najpre završite Konfigurator"
+                : tsBlocked
+                  ? "Sigurnosna provera nije dostupna — javite se emailom ili telefonom"
+                  : !tsToken
+                    ? "Sačekajte sigurnosnu proveru"
+                    : "Popunite obavezna polja"
           }
         >
           {sending ? "Slanje…" : sent === "ok" ? "Poslato ✓" : "Proverite svoj datum"}

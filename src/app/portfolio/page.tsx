@@ -9,12 +9,15 @@ import Link from "next/link";
 import { CAT_LABEL, type CatSlug } from "@/data/portfolio";
 import { listPublicImagesIn, listPortfolioCats } from "@/lib/listPublicImages";
 import { photoCountLabel } from "@/lib/alt";
+import { absUrl, breadcrumbJsonLd, pageMeta } from "@/lib/seo";
 
-export const metadata = {
-  title: "Priče | Studio Contrast",
+export const metadata = pageMeta({
+  title: "Portfolio venčanja i porodičnih slavlja",
+  ogTitle: "Portfolio — fotografije venčanja i slavlja | Studio Contrast",
   description:
-    "Priče koje smo zabeležili — venčanja, svadbe, krštenja, rođendani i portreti iz studija. Izaberite kategoriju i pregledajte fotografije.",
-};
+    "Fotografije venčanja, svadbi, krštenja, rođendana i studijskih portreta iz Užica, sa Zlatibora i iz cele Srbije. Izaberite kategoriju i pregledajte galeriju.",
+  path: "/portfolio",
+});
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,12 +92,48 @@ export default function PortfolioPage() {
   });
   const total = cards.reduce((n, c) => n + c.count, 0);
 
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Početna", path: "/" },
+    { name: "Portfolio", path: "/portfolio" },
+  ]);
+
+  /* Hub galerija — lista kategorija pomaže Google-u da poveže
+     /portfolio sa pojedinačnim galerijama. */
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Portfolio — Studio Contrast",
+    description:
+      "Galerije fotografija venčanja, svadbi, krštenja, rođendana i studijskih portreta.",
+    url: absUrl("/portfolio"),
+    inLanguage: "sr-RS",
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: cards.length,
+      itemListElement: cards.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: c.label,
+        url: absUrl(`/portfolio/${c.slug}`),
+      })),
+    },
+  };
+
   return (
     <>
       <Navbar />
       <main>
         <section className="pb-20 pt-16 md:pb-28 md:pt-24">
           <Container className="!max-w-[1480px] md:!px-8">
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+            />
+
             {/* Editorial zaglavlje: naslov levo, uvod + meta desno */}
             <Reveal>
               <div className="grid gap-8 md:grid-cols-12 md:items-end">

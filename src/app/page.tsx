@@ -13,11 +13,9 @@ import Reveal from "@/components/Reveal";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Studio Contrast | Foto i video",
-  description:
-    "Fotografisanje Užice i Zlatibor: prirodni trenuci, istinite emocije i upečatljive fotografije u boji i crno-belo.",
-};
+// Metapodaci početne (naslov, opis, canonical "/", OG) dolaze iz
+// src/app/layout.tsx — root segment ne primenjuje sopstveni title template,
+// pa bi duplirana definicija ovde samo išla van sinhronizacije.
 
 const STATS = [
   { n: "10+", label: "godina iskustva" },
@@ -32,10 +30,13 @@ export default function HomePage() {
       <ScrollRestorer />
 
       <main>
-        {/* Lokalni SEO hint – ne remeti dizajn (sr-only) */}
+        {/* Lokalni SEO kontekst — ne remeti dizajn (sr-only).
+            Sadrži samo tvrdnje koje stoje i u vidljivom sadržaju sajta. */}
         <p className="sr-only">
-          Studio Contrast — fotografisanje u Užicu i Zlatiboru, a radimo i širom Srbije: venčanja,
-          portreti, porodične i poslovne sesije.
+          Studio Contrast je foto i video studio iz Užica, Carinska 4. Fotografišemo i
+          snimamo venčanja, svadbe, krštenja i rođendane u Užicu, na Zlatiboru i širom
+          Srbije, a u studiju radimo portrete parova, porodica i pojedinaca. Iza nas je
+          više od deset godina rada, preko 300 događaja i 25 gradova.
         </p>
 
         {/* 1. Hero */}

@@ -8,13 +8,16 @@ import Link from "next/link";
 
 type Props = {
   ctaHref?: string;
-  /** Fallback fotografija — mobilni + dok se video ne učita */
+  /** Kadar iz videa — prvi frame; stoji ispod videa na md+ (bez „bljeska“) */
   poster?: string;
+  /** Crno-bela fotografija za mobilni, gde se video ne pušta */
+  posterMobile?: string;
 };
 
 export default function HeroCinematic({
   ctaHref = "/upit",
-  poster = "/home/hero-mobile.jpg",
+  poster = "/home/hero-poster.jpg",
+  posterMobile = "/home/hero-mobile.jpg",
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showVideo, setShowVideo] = useState(false);
@@ -42,14 +45,22 @@ export default function HeroCinematic({
 
   return (
     <section className="relative min-h-[640px] w-full overflow-hidden bg-[var(--ink)] text-[var(--ink-fg)]" style={{ height: "100svh" }}>
-      {/* Pozadina: fotografija uvek, video preko nje na md+ */}
-      <img
-        src={poster}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
-        style={{ filter: "grayscale(1) contrast(1.06)" }}
-      />
+      {/* Pozadina. Na md+ stoji PRVI KADAR videa (isti filter) pa je prelaz
+          na video nevidljiv; na mobilnom, gde se video ne pušta, stoji
+          crno-bela fotografija. <picture> bira samo jednu — bez dvostrukog
+          preuzimanja. LCP element: eager + visok prioritet. */}
+      <picture>
+        <source media="(min-width: 768px)" srcSet={poster} />
+        <img
+          src={posterMobile}
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="hero-poster absolute inset-0 h-full w-full object-cover object-[50%_30%]"
+        />
+      </picture>
       {showVideo && (
         <video
           ref={videoRef}
@@ -58,7 +69,7 @@ export default function HeroCinematic({
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
           poster={poster}
           style={{ filter: "saturate(0.55) contrast(1.05)" }}
         >
@@ -137,6 +148,12 @@ export default function HeroCinematic({
       </div>
 
       <style>{`
+        /* Mobilni: crno-bela fotografija. md+: isti filter kao video,
+           da zamena poster→video ne bude vidljiva. */
+        .hero-poster { filter: grayscale(1) contrast(1.06); }
+        @media (min-width: 768px) {
+          .hero-poster { filter: saturate(0.55) contrast(1.05); }
+        }
         @keyframes heroline {
           0% { transform: translateX(-100%); }
           55% { transform: translateX(200%); }

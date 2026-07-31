@@ -196,9 +196,9 @@ const [eventType, setEventType] = useState<EventType>(() =>
     let cancelled = false;
     (async () => {
       try {
-        // prvo probamo /api/inquiry/addons (ovde smo ga postavili), pa fallback /api/addons
-        let res = await fetch("/api/inquiry/addons?debug=0", { cache: "no-store" });
-        if (!res.ok) res = await fetch("/api/addons", { cache: "no-store" });
+        // Napomena: raniji fallback na "/api/addons" je uklonjen — ta ruta ne
+        // postoji, pa je svaki neuspeh primarne davao još jedan 404 u konzoli.
+        const res = await fetch("/api/inquiry/addons?debug=0", { cache: "no-store" });
         if (!res.ok) return;
 
         const json = await res.json();

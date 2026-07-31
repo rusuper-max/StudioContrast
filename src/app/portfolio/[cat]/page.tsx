@@ -11,13 +11,47 @@ import { notFound } from "next/navigation";
 import { CAT_LABEL, isCatSlug, type CatSlug } from "@/data/portfolio";
 import { listPublicImagesIn, listPortfolioCats } from "@/lib/listPublicImages";
 import { altForImage } from "@/lib/alt";
+import { absUrl, breadcrumbJsonLd, pageMeta } from "@/lib/seo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+/* Naslovi i opisi po kategoriji — pišemo ih ručno da bi svaka galerija
+   ciljala stvarnu pretragu ("fotografisanje krštenja", "svadbeni fotograf")
+   umesto generičkog "Kategorija: izbor fotografija". */
+const CAT_SEO: Record<CatSlug, { title: string; description: string }> = {
+  vencanje: {
+    title: "Fotografije venčanja — Užice i Zlatibor",
+    description:
+      "Galerija fotografija sa venčanja u Užicu, na Zlatiboru i širom Srbije — od jutarnjih priprema do poslednjeg plesa, bez nameštenih scena.",
+  },
+  svadbe: {
+    title: "Fotografisanje svadbi i proslava",
+    description:
+      "Fotografije sa svadbenih proslava: puna sala, muzika i trenuci koji se najviše prepričavaju. Beležimo atmosferu, ne samo protokol.",
+  },
+  krstenja: {
+    title: "Fotografisanje krštenja",
+    description:
+      "Fotografije sa krštenja — obred i porodično slavlje zabeleženi nenametljivo, tako da obred ostane obred. Užice, Zlatibor i cela Srbija.",
+  },
+  rodjendani: {
+    title: "Fotografisanje rođendana i dečjih slavlja",
+    description:
+      "Rođendanske proslave i dečja slavlja — torta, baloni i iskren osmeh. Hvatamo radost onako kako je deca žive, u pokretu.",
+  },
+  studio: {
+    title: "Studijski portreti — parovi i porodice",
+    description:
+      "Portreti u kontrolisanom svetlu našeg studija u Užicu: parovi, porodice i pojedinci. Dovoljno vremena i mirna atmosfera za prirodan kadar.",
+  },
+  "crno-belo": {
+    title: "Crno-bele fotografije venčanja i portreta",
+    description:
+      "Izbor crno-belih fotografija — kada sklonimo boju, ostanu svetlo i emocija. Venčanja, portreti i porodični trenuci u monohromu.",
+  },
+};
 
-/* PLACEHOLDER — zameniti pravim sadržajem */
 const CAT_INTRO: Record<CatSlug, string> = {
   vencanje:
     "Od jutarnjih priprema do poslednjeg plesa — pratimo vaš dan onako kako se zaista dogodio. Tiho, strpljivo i bez nameštenih scena.",
@@ -40,15 +74,17 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { cat: raw } = await params;
-  const cat = isCatSlug(raw) ? (raw as CatSlug) : null;
-  const label = cat ? CAT_LABEL[cat] : null;
+  if (!isCatSlug(raw)) {
+    return { title: "Portfolio", robots: { index: false, follow: true } };
+  }
+  const cat = raw as CatSlug;
+  const seo = CAT_SEO[cat];
 
-  return label
-    ? {
-        title: `${label} — Priče | Studio Contrast`,
-        description: `${label}: izbor fotografija Studija Contrast. Pregledajte galeriju ili je prelistajte kao album.`,
-      }
-    : { title: "Priče | Studio Contrast" };
+  return pageMeta({
+    title: seo.title,
+    description: seo.description,
+    path: `/portfolio/${cat}`,
+  });
 }
 
 /* Prirodne proporcije za masonry — umesto podrazumevanog transforma
@@ -84,14 +120,30 @@ export default async function CategoryStoryPage({ params, searchParams }: Props)
   const order = listPortfolioCats();
   const nextCat = order[(order.indexOf(cat) + 1) % order.length];
 
-  const breadcrumbLd = {
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Početna", path: "/" },
+    { name: "Portfolio", path: "/portfolio" },
+    { name: label, path: `/portfolio/${cat}` },
+  ]);
+
+  /* Galerija — prave slike sa prave stranice, sa opisnim alt tekstom.
+     Pomaže indeksiranju u Google Images (glavni izvor saobraćaja za studio). */
+  const galleryLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Početna", item: `${SITE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "Priče", item: `${SITE_URL}/portfolio` },
-      { "@type": "ListItem", position: 3, name: label, item: `${SITE_URL}/portfolio/${cat}` },
-    ],
+    "@type": "ImageGallery",
+    name: `${label} — Studio Contrast`,
+    description: CAT_INTRO[cat],
+    url: absUrl(`/portfolio/${cat}`),
+    inLanguage: "sr-RS",
+    numberOfItems: lightboxItems.length,
+    associatedMedia: lightboxItems.slice(0, 20).map((it) => ({
+      "@type": "ImageObject",
+      contentUrl: it.src,
+      caption: it.alt,
+      representativeOfPage: false,
+      creditText: "Studio Contrast",
+      creator: { "@type": "Organization", name: "Studio Contrast" },
+    })),
   };
 
   return (
@@ -103,6 +155,10 @@ export default async function CategoryStoryPage({ params, searchParams }: Props)
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryLd) }}
             />
 
             <Reveal>

@@ -20,12 +20,17 @@ export async function generateMetadata({ params }: Props) {
   const { cat: raw } = await params;
   const cat = isCatSlug(raw) ? (raw as CatSlug) : null;
   const label = cat ? CAT_LABEL[cat] : null;
-  return label
-    ? {
-        title: `${label} — sve fotografije | Studio Contrast`,
-        description: `${label}: sve fotografije iz kategorije, sa uvećanim prikazom.`,
-      }
-    : { title: "Priče | Studio Contrast" };
+  if (!label || !cat) {
+    return { title: "Portfolio", robots: { index: false, follow: true } };
+  }
+  // Ista kolekcija slika kao /portfolio/[cat], samo drugi prikaz —
+  // canonical na roditelja da se u indeksu ne takmiče dve iste stranice.
+  return {
+    title: `${label} — sve fotografije`,
+    description: `${label}: sve fotografije iz kategorije, sa uvećanim prikazom.`,
+    alternates: { canonical: `/portfolio/${cat}` },
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function FullCategoryPage({ params, searchParams }: Props) {

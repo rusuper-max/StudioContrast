@@ -112,8 +112,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
 
       <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
         <div className="grid gap-1">
-          <label className={LABEL_CLS}>Tip događaja *</label>
+          <label htmlFor="qi-type" className={LABEL_CLS}>Tip događaja *</label>
           <select
+            id="qi-type"
             value={f.type}
             onChange={onChange("type")}
             className={INPUT_CLS}
@@ -125,8 +126,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
 
         <div className="grid gap-1">
-          <label className={LABEL_CLS}>Datum *</label>
+          <label htmlFor="qi-date" className={LABEL_CLS}>Datum *</label>
           <input
+            id="qi-date"
             type="date"
             value={f.date}
             onChange={onChange("date")}
@@ -137,8 +139,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
 
         <div className="grid gap-1">
-          <label className={LABEL_CLS}>Lokacija *</label>
+          <label htmlFor="qi-location" className={LABEL_CLS}>Lokacija *</label>
           <input
+            id="qi-location"
             value={f.location}
             onChange={onChange("location")}
             className={INPUT_CLS}
@@ -148,8 +151,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
 
         <div className="relative grid gap-1">
-          <label className={LABEL_CLS}>Email *</label>
+          <label htmlFor="qi-email" className={LABEL_CLS}>Email *</label>
           <input
+            id="qi-email"
             type="email"
             value={f.email}
             onChange={onChange("email")}
@@ -168,8 +172,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
 
         <div className="grid gap-1 md:col-span-2">
-          <label className={LABEL_CLS}>Pitanje / poruka</label>
+          <label htmlFor="qi-message" className={LABEL_CLS}>Pitanje / poruka</label>
           <textarea
+            id="qi-message"
             rows={3}
             value={f.message}
             onChange={onChange("message")}

@@ -8,12 +8,15 @@ import QuickInquiry from "@/components/QuickInquiry";
 import Reveal from "@/components/Reveal";
 import { testimonials } from "@/data/testimonials";
 import type { PlanSlug } from "@/data/packages";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
-  title: "Pošaljite upit | Studio Contrast",
+export const metadata = pageMeta({
+  title: "Provera termina i upit za snimanje",
+  ogTitle: "Provera termina i upit za snimanje | Studio Contrast",
   description:
-    "Pošaljite detaljan upit: paket, dodaci, datum, lokacija i kontakt. Odgovaramo u roku od 24 časa.",
-};
+    "Proverite da li je vaš datum slobodan. Pošaljite upit sa paketom, dodacima, datumom i lokacijom proslave — odgovaramo u roku od 24 časa.",
+  path: "/upit",
+});
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

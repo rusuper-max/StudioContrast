@@ -176,10 +176,54 @@ function extractAddons(body: any): string[] {
   return Array.from(set);
 }
 
+/** IP iz standardnih zaglavlja (za Turnstile proveru) */
+function getClientIp(req: NextRequest): string | undefined {
+  return (
+    req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    undefined
+  );
+}
+
+/**
+ * Provera Turnstile tokena — do sada je ovaj endpoint primao upite BEZ
+ * ikakve provere (za razliku od /api/inquiry-quick), pa je captcha na
+ * klijentu bila samo dekor: bot je mogao da šalje direktno na API.
+ * Ako tajni ključ nije podešen (lokalni dev), provera se preskače.
+ */
+async function turnstileOk(req: NextRequest, token: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true; // dev bez ključa
+  if (!token) return false;
+  try {
+    const ip = getClientIp(req);
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret, response: token, ...(ip ? { remoteip: ip } : {}) }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const json = (await res.json()) as { success?: boolean };
+    return !!json.success;
+  } catch {
+    return false;
+  }
+}
+
 /* ───────────── route ───────────── */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Honeypot — skriveno polje koje popunjavaju samo botovi
+    if (typeof body?.website === "string" && body.website.trim() !== "") {
+      return NextResponse.json({ ok: true });
+    }
+
+    if (!(await turnstileOk(req, String(body?.tsToken || "").trim()))) {
+      return new NextResponse("Captcha nije potvrđena", { status: 400 });
+    }
 
     // SMTP
     const transporter = nodemailer.createTransport({

@@ -4,14 +4,15 @@ import Container from "@/components/Container";
 import QuickInquiry from "@/components/QuickInquiry";
 import Reveal from "@/components/Reveal";
 import Link from "next/link";
-import type { Metadata } from "next";
+import { absUrl, breadcrumbJsonLd, pageMeta, STUDIO_ID } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Kontakt | Studio Contrast",
+export const metadata = pageMeta({
+  title: "Kontakt — foto studio u Užicu, Carinska 4",
+  ogTitle: "Kontakt — foto studio u Užicu | Studio Contrast",
   description:
-    "Kontaktirajte Studio Contrast — fotografisanje Užice i Zlatibor region; email, telefoni i lokacija studija.",
-  alternates: { canonical: "/kontakt" },
-};
+    "Studio Contrast, Carinska 4, Užice. Telefon, email, Instagram i mapa. Radimo pon–sub 10–18h, fotografišemo širom Srbije i odgovaramo na upit u roku od 24 časa.",
+  path: "/kontakt",
+});
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +77,22 @@ function ChatLinks({
 }
 
 export default function ContactPage() {
+  /* ContactPage vezan na isti @id kao LocalBusiness iz layout-a — Google
+     tako zna da su telefon, adresa i radno vreme jednog te istog studija. */
+  const contactLd = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: "Kontakt — Studio Contrast",
+    url: absUrl("/kontakt"),
+    inLanguage: "sr-RS",
+    mainEntity: { "@id": STUDIO_ID },
+  };
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Početna", path: "/" },
+    { name: "Kontakt", path: "/kontakt" },
+  ]);
+
   return (
     <>
       <Navbar />
@@ -83,6 +100,14 @@ export default function ContactPage() {
         {/* 1. Zaglavlje stranice */}
         <section className="pt-16 md:pt-24">
           <Container className="!max-w-[1480px] md:!px-8">
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(contactLd) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+            />
             <Reveal>
               <span className="eyebrow">Kontakt</span>
               <h1 className="display-2 mt-4 max-w-[16ch]">

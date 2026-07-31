@@ -3,14 +3,15 @@ import Footer from "@/components/Footer";
 import Container from "@/components/Container";
 import Reveal from "@/components/Reveal";
 import Link from "next/link";
-import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "O nama | Studio Contrast",
+export const metadata = pageMeta({
+  title: "O nama — Janko i Marija, fotografi iz Užica",
+  ogTitle: "O nama — Janko i Marija, fotografi iz Užica | Studio Contrast",
   description:
-    "Studio Contrast — Janko i Marija. Dokumentarna fotografija sa editorial estetikom: iskreni trenuci, čisti tonovi, elegantan kontrast.",
-  alternates: { canonical: "/onama" },
-};
+    "Janko i Marija, dvoje fotografa iza Studija Contrast iz Užica. Dokumentarni pristup sa editorial estetikom, 10+ godina rada i preko 300 zabeleženih događaja.",
+  path: "/onama",
+});
 
 /** Putanje do portreta — stavi svoje fajlove u /public/about/ (npr. 1500×2000) */
 type TeamPerson = {

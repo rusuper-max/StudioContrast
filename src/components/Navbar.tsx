@@ -55,6 +55,18 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "ove
     };
   }, [open]);
 
+  // Escape zatvara i "Paketi" dropdown i mobilni meni (oba su overlay slojevi)
+  useEffect(() => {
+    if (!plansOpen && !open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setPlansOpen(false);
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [plansOpen, open]);
+
   const openPlans = () => {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -237,6 +249,9 @@ export default function Navbar({ variant = "solid" }: { variant?: "solid" | "ove
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!open}
+        // Bez ovoga su linkovi zatvorenog menija i dalje u tab redosledu
+        // (fokus odlazi na nevidljiv sadržaj).
+        inert={!open}
       >
         <nav className="flex flex-1 flex-col justify-center gap-1 px-8 pt-16" aria-label="Mobilna navigacija">
           {[
