@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import TurnstileLoader from "@/components/TurnstileLoader";
-import { playfair, inter } from "@/lib/fonts";
+import { fraunces, sans } from "@/lib/fonts";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const SITE_NAME = "Studio Contrast";
@@ -66,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="sr" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="sr" className={`${fraunces.variable} ${sans.variable}`}>
       <head>
         <script
           type="application/ld+json"

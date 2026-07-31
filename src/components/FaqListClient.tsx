@@ -24,18 +24,15 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
   }, []);
 
   return (
-    <div className="mx-auto mt-8 max-w-3xl">
-      {items.map((f) => {
+    <div className="border-t border-[var(--border)]">
+      {items.map((f, i) => {
         const isActive = activeId === f.id;
+        const index = String(i + 1).padStart(2, "0");
         return (
           <details
             key={f.id}
             id={f.id}
-            className={[
-              "faq-item group mb-3 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]",
-              "scroll-mt-24 md:scroll-mt-28",
-              isActive ? "is-active" : "",
-            ].join(" ")}
+            className="group border-b border-[var(--border)] scroll-mt-24 md:scroll-mt-28"
             onToggle={(e) => {
               const open = (e.currentTarget as HTMLDetailsElement).open;
               if (open) {
@@ -53,7 +50,7 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
             }}
           >
             <summary
-              className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent-strong)]"
+              className="flex cursor-pointer list-none items-baseline gap-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent-strong)] md:gap-5 md:py-7 [&::-webkit-details-marker]:hidden"
               onClick={() => {
                 setActiveId(f.id);
                 if (typeof window !== "undefined") {
@@ -62,21 +59,32 @@ export default function FaqListClient({ items }: { items: FaqLite[] }) {
               }}
             >
               <span
+                aria-hidden="true"
+                className="w-7 shrink-0 text-[10px] tracking-[0.3em] text-[var(--accent-strong)]"
+              >
+                {index}
+              </span>
+              <span
                 className={[
-                  "font-medium transition-colors",
-                  isActive ? "text-[var(--fg)]" : "text-[var(--fg)]/80",
+                  "flex-1 font-serif text-[19px] leading-snug transition-colors md:text-[22px]",
+                  isActive ? "text-[var(--fg)]" : "text-[var(--fg)]/85",
+                  "group-open:text-[var(--fg)] group-hover:text-[var(--fg)]",
                 ].join(" ")}
               >
                 {f.q}
               </span>
               <span
                 aria-hidden="true"
-                className="shrink-0 rounded-full border border-[var(--border-strong)] px-2 py-0.5 text-xs text-[var(--muted)] transition group-open:rotate-180"
+                className="shrink-0 self-center font-serif text-[24px] font-light leading-none text-[var(--muted)] transition-transform duration-300 group-open:rotate-45 group-open:text-[var(--accent-strong)]"
               >
-                ▾
+                +
               </span>
             </summary>
-            <div className="px-4 pb-4 pt-1 leading-relaxed text-[var(--muted)]">{f.aJSX}</div>
+            <div className="pb-8 pl-11 pr-2 md:pb-9 md:pl-12 md:pr-10">
+              <div className="max-w-2xl font-serif text-[15.5px] leading-[1.75] text-[var(--muted)]">
+                {f.aJSX}
+              </div>
+            </div>
           </details>
         );
       })}

@@ -1,9 +1,11 @@
 // src/app/upit/page.tsx
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
 import InquiryForm from "@/components/InquiryForm";
 import QuickInquiry from "@/components/QuickInquiry";
+import Reveal from "@/components/Reveal";
 import { testimonials } from "@/data/testimonials";
 import type { PlanSlug } from "@/data/packages";
 
@@ -92,7 +94,49 @@ function prettyLabel(key: string) {
   return key;
 }
 
-export default function InquiryPage({ searchParams = {} }: { searchParams?: SearchParams }) {
+/** Aside pored forme — pravi utisak mladenaca ili činjenice o studiju */
+function StudioAside() {
+  const quote = testimonials[0] ?? null;
+
+  return (
+    <aside
+      className="hidden lg:sticky lg:top-28 lg:block lg:border-l lg:border-[var(--border)] lg:pl-10"
+      aria-label="O studiju"
+    >
+      {quote ? (
+        <figure>
+          <blockquote className="font-serif text-xl italic leading-relaxed text-[var(--fg)]">
+            „{quote.quote}“
+          </blockquote>
+          <figcaption className="mt-5 meta-caps">{quote.attribution}</figcaption>
+        </figure>
+      ) : (
+        <div>
+          <p className="eyebrow">Studio Contrast</p>
+          <p className="lead mt-5 text-[15px] leading-relaxed">
+            Carinska 4, Užice — radimo širom Srbije i regiona.
+          </p>
+          <div className="mt-8 border-t border-[var(--border)] pt-6">
+            <p className="meta-caps">Odgovor</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+              Na upite odgovaramo u roku od 24 časa.
+            </p>
+          </div>
+          <Link href="/kontakt" className="btn-text mt-8">
+            Svi kontakti
+          </Link>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+export default async function InquiryPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const searchParams = (await searchParamsPromise) ?? {};
   // Prefill iz query stringa (dolazi iz konfiguratora)
   const prefill = {
     name: getStr(searchParams.name),
@@ -151,141 +195,152 @@ export default function InquiryPage({ searchParams = {} }: { searchParams?: Sear
   for (const key of selectedAddons) backQs.set(key, "1");
   const backToConfiguratorHref = `/ponude${backQs.toString() ? `?${backQs.toString()}` : ""}`;
 
-  // jedan citat mladenaca za aside pored forme
-  const quote = testimonials[0];
-
   return (
     <>
       <Navbar />
-      <main className="section">
-        <Container>
-          <div className="text-center">
-            <div className="kicker">Upit</div>
-            <h1 className="mt-3 font-serif text-4xl md:text-5xl">Pošaljite upit</h1>
-            <p className="lead mx-auto mt-4 max-w-2xl">
-              Odgovorićemo u roku od 24 časa. Ako ste došli iz ponuda, vaša podešavanja su
-              već popunjena — dodajte datum, lokaciju i kontakt.
-            </p>
-          </div>
+      <main>
+        {/* 1. Zaglavlje stranice */}
+        <section className="pb-12 pt-16 md:pb-16 md:pt-24">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <Reveal>
+              <span className="eyebrow">Upit</span>
+              <h1 className="display-2 mt-4 max-w-[16ch]">
+                Pošaljite <em className="serif-italic">upit</em>
+              </h1>
+              <p className="lead mt-6 max-w-xl">
+                Odgovaramo u roku od 24 časa. Ako ste došli iz konfiguratora,
+                vaša podešavanja su već popunjena — dodajte još datum, lokaciju
+                i kontakt.
+              </p>
+            </Reveal>
+          </Container>
+        </section>
 
-          {/* ——— REZIME ——— (samo ako postoji plan) */}
-          {hasPlan && prefill.plan && (
-            <div className="card mt-10 p-5 md:p-6">
-              <div className="text-sm text-[var(--muted)]">Odabrali ste</div>
-              <div className="mt-1 flex items-center gap-2 text-lg font-medium text-[var(--fg)]">
-                <span
-                  aria-hidden
-                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: PLAN_COLORS[prefill.plan].dot }}
-                />
-                {DISPLAY_PLAN_NAME[prefill.plan]}{prefill.type ? ` · ${prefill.type}` : ""}
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[10px] border border-[var(--border)] p-3">
-                  <div className="text-xs text-[var(--muted)]">Orijentaciona cena</div>
-                  <div className="mt-1 font-serif text-2xl text-[var(--fg)]">
-                    {prefill.priceHint ? `${prefill.priceHint.toLocaleString("sr-RS")} €` : "—"}
+        {/* 2. Rezime konfiguracije — samo ako postoji plan */}
+        {hasPlan && prefill.plan && (
+          <section className="border-t border-[var(--border)]">
+            <Container className="!max-w-[1480px] md:!px-8">
+              <Reveal>
+                <div className="grid gap-10 py-10 md:grid-cols-12 md:gap-8 md:py-12">
+                  <div className="md:col-span-4">
+                    <p className="meta-caps">Odabrali ste</p>
+                    <p className="mt-3 flex items-baseline gap-3 font-serif text-3xl md:text-4xl">
+                      <span
+                        aria-hidden
+                        className="inline-block h-2 w-2 shrink-0 self-center rounded-full"
+                        style={{ background: PLAN_COLORS[prefill.plan].dot }}
+                      />
+                      {DISPLAY_PLAN_NAME[prefill.plan]}
+                      {prefill.type ? (
+                        <em className="serif-italic text-2xl text-[var(--muted)] md:text-3xl">
+                          {prefill.type}
+                        </em>
+                      ) : null}
+                    </p>
+                    <a href={backToConfiguratorHref} className="btn-text mt-6">
+                      Vratite se na konfigurator
+                    </a>
                   </div>
-                  {!!prefill.extraHours && (
-                    <div className="mt-1 text-xs text-[var(--muted)]">
-                      + {prefill.extraHours}h posle ponoći (obračun se vrši po ceni iz konfiguratora)
-                    </div>
-                  )}
-                </div>
 
-                <div className="rounded-[10px] border border-[var(--border)] p-3">
-                  <div className="text-xs text-[var(--muted)]">Dodatne opcije</div>
-                  {selectedAddons.length === 0 ? (
-                    <div className="mt-1 text-sm text-[var(--fg)]">Bez dodatnih opcija</div>
-                  ) : (
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {selectedAddons.map((k) => (
-                        <li
-                          key={k}
-                          className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-sm text-[var(--fg)]"
-                          title={prettyLabel(k)}
-                        >
-                          {prettyLabel(k)}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
+                  <div className="border-t border-[var(--border)] pt-8 md:col-span-3 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                    <p className="meta-caps">Orijentaciona cena</p>
+                    <p className="mt-3 font-serif text-3xl md:text-4xl">
+                      {prefill.priceHint ? `${prefill.priceHint.toLocaleString("sr-RS")} €` : "—"}
+                    </p>
+                    {!!prefill.extraHours && (
+                      <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+                        + {prefill.extraHours}h posle ponoći (obračun se vrši po ceni
+                        iz konfiguratora)
+                      </p>
+                    )}
+                  </div>
 
-              <div className="mt-4">
-                <a href={backToConfiguratorHref} className="link text-sm">
-                  ← Vratite se na konfigurator
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* ——— FORMA + aside citat ——— */}
-          {hasPlan ? (
-            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-              <InquiryForm prefill={prefill as any} />
-
-              {/* PLACEHOLDER — zameniti pravim sadržajem */}
-              <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Utisak mladenaca">
-                <figure className="card p-6">
-                  <blockquote className="font-serif text-xl italic leading-relaxed text-[var(--fg)]">
-                    „{quote.quote}“
-                  </blockquote>
-                  <figcaption className="mt-4 text-sm text-[var(--muted)]">
-                    {quote.names} · {quote.location}, {quote.dateLabel}
-                  </figcaption>
-                </figure>
-              </aside>
-            </div>
-          ) : (
-            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-              <div>
-                {/* Napomena: potpuna forma traži izabran paket */}
-                <div className="rounded-xl border border-[var(--accent)] bg-[var(--surface)] p-5 md:p-6">
-                  <h2 className="font-serif text-xl">Niste odabrali paket</h2>
-                  <p className="mt-2 text-sm text-[var(--muted)]">
-                    Potpuna forma se otključava kada u konfiguratoru izaberete paket i opcije.
-                    Ako imate kratko pitanje, pošaljite brzi upit ispod.
-                  </p>
-                  <div className="mt-4">
-                    <a href="/ponude" className="btn btn-primary">Otvorite konfigurator</a>
+                  <div className="border-t border-[var(--border)] pt-8 md:col-span-5 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                    <p className="meta-caps">Dodatne opcije</p>
+                    {selectedAddons.length === 0 ? (
+                      <p className="mt-3 text-sm text-[var(--muted)]">Bez dodatnih opcija</p>
+                    ) : (
+                      <ul className="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                        {selectedAddons.map((k) => (
+                          <li key={k} className="flex items-baseline gap-2.5">
+                            <span
+                              aria-hidden
+                              className="inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--accent-strong)]"
+                            />
+                            {prettyLabel(k)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
+              </Reveal>
+            </Container>
+          </section>
+        )}
 
-                {/* Brzi upit */}
-                <div className="card mt-6 p-5 md:p-6">
-                  <h3 className="font-serif text-lg">Brzi upit (bez konfiguratora)</h3>
-                  <p className="mt-1 text-sm text-[var(--muted)]">
-                    Kratko pitanje ili provera termina? Pošaljite nam poruku, javljamo se uskoro.
-                  </p>
-                  <div className="mt-4">
-                    <QuickInquiry />
-                  </div>
-                </div>
+        {/* 3. Forma + aside */}
+        <section className="border-t border-[var(--border)] pb-20 pt-14 md:pb-28 md:pt-20">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+              <div className="lg:col-span-7">
+                {hasPlan ? (
+                  <Reveal>
+                    <InquiryForm prefill={prefill as any} />
+                  </Reveal>
+                ) : (
+                  <>
+                    {/* Napomena: potpuna forma traži izabran paket */}
+                    <Reveal>
+                      <span className="eyebrow">Napomena</span>
+                      <h2 className="mt-4 font-serif text-2xl md:text-3xl">
+                        Niste odabrali paket
+                      </h2>
+                      <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--muted)]">
+                        Potpuna forma se otključava kada u konfiguratoru izaberete
+                        paket i opcije. Ako imate kratko pitanje, pošaljite brzi
+                        upit ispod.
+                      </p>
+                      <Link href="/ponude" className="btn btn-outline mt-6">
+                        Otvorite konfigurator
+                      </Link>
+                    </Reveal>
+
+                    {/* Brzi upit */}
+                    <Reveal>
+                      <div className="mt-14 border-t border-[var(--border)] pt-12">
+                        <span className="eyebrow">Brzi upit</span>
+                        <h3 className="mt-4 font-serif text-2xl">
+                          Provera termina — bez konfiguratora
+                        </h3>
+                        <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--muted)]">
+                          Kratko pitanje ili provera termina? Pošaljite nam poruku,
+                          javljamo se uskoro.
+                        </p>
+                        <div className="mt-10">
+                          <QuickInquiry />
+                        </div>
+                      </div>
+                    </Reveal>
+                  </>
+                )}
               </div>
 
-              {/* PLACEHOLDER — zameniti pravim sadržajem */}
-              <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Utisak mladenaca">
-                <figure className="card p-6">
-                  <blockquote className="font-serif text-xl italic leading-relaxed text-[var(--fg)]">
-                    „{quote.quote}“
-                  </blockquote>
-                  <figcaption className="mt-4 text-sm text-[var(--muted)]">
-                    {quote.names} · {quote.location}, {quote.dateLabel}
-                  </figcaption>
-                </figure>
-              </aside>
+              <Reveal delay={120} className="lg:col-span-4 lg:col-start-9">
+                <StudioAside />
+              </Reveal>
             </div>
-          )}
 
-          <p className="mt-10 text-center text-xs text-[var(--muted)]">
-            Radimo širom Srbije i regiona. U sezoni se termini brzo popunjavaju — javite se na vreme.
-          </p>
-        </Container>
+            <Reveal>
+              <p className="mt-16 border-t border-[var(--border)] pt-8 text-center text-xs tracking-wide text-[var(--muted)] md:mt-20">
+                Radimo širom Srbije i regiona. U sezoni se termini brzo popunjavaju —
+                javite se na vreme.
+              </p>
+            </Reveal>
+          </Container>
+        </section>
       </main>
-      <Footer />
+      <Footer cta={false} />
     </>
   );
 }

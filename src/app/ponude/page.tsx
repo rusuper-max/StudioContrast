@@ -1,44 +1,67 @@
+// src/app/ponude/page.tsx
+// Konfigurator ponude — editorial header (levo poravnat) + hairline
+// arhitektura konfiguratora. Logika cena živi u PricingConfigurator.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
+import Reveal from "@/components/Reveal";
 import PricingConfigurator from "@/components/PricingConfigurator";
-import { type PlanSlug, PLANS } from "@/data/packages";
+import { type PlanSlug } from "@/data/packages";
 
 export const metadata = {
   title: "Ponude | Studio Contrast",
-  description: "Tri paketa uz konfigurator dodataka — izračunajte orijentacionu cenu i pošaljite upit.",
+  description:
+    "Tri paketa uz konfigurator dodataka — izračunajte orijentacionu cenu i pošaljite upit.",
 };
 
-type Props = { searchParams?: { plan?: PlanSlug; type?: string } };
+type Props = {
+  searchParams?: Promise<{ plan?: string; type?: string }>;
+};
 
-export default function OffersPage({ searchParams }: Props) {
-  const plan = (searchParams?.plan && ["basic","classic","signature"].includes(searchParams.plan))
-    ? (searchParams!.plan as PlanSlug)
-    : "classic";
-    const initialType = searchParams?.type; // može biti npr. "Studio", "Rođendan"...
+export default async function OffersPage({ searchParams }: Props) {
+  const sp = (await searchParams) ?? {};
+  const plan: PlanSlug =
+    sp.plan && (["basic", "classic", "signature"] as string[]).includes(sp.plan)
+      ? (sp.plan as PlanSlug)
+      : "classic";
+  const initialType = sp.type; // može biti npr. "Studio", "Rođendan"...
 
   return (
     <>
       <Navbar />
-      <main className="section">
-        <Container>
-          <div className="text-center">
-            <div className="kicker">Ponude</div>
-            <h1 className="mt-3 font-serif text-4xl md:text-5xl">
-              Izaberite paket i prilagodite ga
-            </h1>
-            <p className="lead mx-auto mt-3 max-w-2xl">
-              Cene su orijentacione. Nakon što pošaljete detalje (datum, lokacija, trajanje),
-              javimo se sa preciznom ponudom i raspoloživošću.
-            </p>
-          </div>
+      <main>
+        <section className="pb-20 pt-16 md:pb-28 md:pt-24">
+          <Container className="!max-w-[1480px] md:!px-8">
+            {/* Header — levo poravnat, editorial */}
+            <Reveal>
+              <div className="grid gap-6 md:grid-cols-12 md:items-end">
+                <div className="md:col-span-7">
+                  <span className="eyebrow">Ponude</span>
+                  <h1 className="display-2 mt-4 max-w-[16ch]">
+                    Izaberite paket i{" "}
+                    <em className="serif-italic">prilagodite</em> ga
+                  </h1>
+                </div>
+                <div className="md:col-span-5 md:pb-2">
+                  <p className="lead max-w-md text-[15px] leading-relaxed md:ml-auto">
+                    Cene su orijentacione. Nakon što pošaljete detalje (datum,
+                    lokacija, trajanje), javimo se sa preciznom ponudom i
+                    raspoloživošću.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
 
-          <div className="mt-10">
-            <PricingConfigurator initialPlan={plan} initialType={initialType} />
-          </div>
-        </Container>
+            {/* Konfigurator */}
+            <Reveal delay={120}>
+              <div className="mt-14 border-t border-[var(--border)] pt-12 md:mt-20 md:pt-14">
+                <PricingConfigurator initialPlan={plan} initialType={initialType} />
+              </div>
+            </Reveal>
+          </Container>
+        </section>
       </main>
-      <Footer />
+      <Footer cta={false} />
     </>
   );
 }

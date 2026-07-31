@@ -1,98 +1,122 @@
 // src/components/FeaturedStories.tsx
-// Izdvojene priče — statičan grid od tri kartice (zamenjuje stari marquee karusel).
+// Izdvojene priče — asimetrični editorial grid. Potpisi stoje IZNAD kadra
+// (čitaju se redom 01→03), fotografije su crno-bele, boja se otkriva na hover.
 import Link from "next/link";
 import Container from "./Container";
-import { listPublicImagesIn } from "@/lib/listPublicImages";
-import type { CatSlug } from "@/data/portfolio";
+import Reveal from "./Reveal";
 
 type Story = {
-  names: string;
-  location: string;
-  cat: CatSlug;
+  index: string;
+  title: string;
+  album: string;
+  href: string;
+  src: string;
   alt: string;
+  aspect: string;
 };
 
-/* PLACEHOLDER — zameniti pravim imenima parova, lokacijama i odgovarajućim albumima */
-const STORIES: Story[] = [
+/* Naslovi su opisi kadrova (bez izmišljenih imena parova) + stvarni album.
+   Kada parovi daju saglasnost, ovde mogu stajati prava imena i lokacije. */
+const LEAD: Story = {
+  index: "01",
+  title: "Ruka u ruci",
+  album: "Svadbe",
+  href: "/portfolio/svadbe",
+  src: "/home/story-portrait.jpg",
+  alt: "Mladenci se drže za ruke u šetnji gradom",
+  aspect: "aspect-[3/4]",
+};
+
+const SIDE: Story[] = [
   {
-    names: "Jelena & Marko",
-    location: "Zlatibor",
-    cat: "vencanje",
-    alt: "Jelena i Marko na venčanju na Zlatiboru",
+    index: "02",
+    title: "Tihi trenutak",
+    album: "Crno-belo",
+    href: "/portfolio/crno-belo",
+    src: "/home/story-cap.jpg",
+    alt: "Crno-beli kadar mladoženje i mlade u tihom trenutku",
+    aspect: "aspect-[3/2]",
   },
   {
-    names: "Ana & Stefan",
-    location: "Užice",
-    cat: "svadbe",
-    alt: "Ana i Stefan na svadbenom slavlju u Užicu",
-  },
-  {
-    names: "Mina & Luka",
-    location: "Tara",
-    cat: "crno-belo",
-    alt: "Mina i Luka, crno-bela fotografija sa venčanja na Tari",
+    index: "03",
+    title: "Zagrljaj",
+    album: "Venčanja",
+    href: "/portfolio/vencanje",
+    src: "/home/story-hug.jpg",
+    alt: "Zagrljaj mlade i kume na venčanju",
+    aspect: "aspect-[3/2]",
   },
 ];
 
-export default function FeaturedStories() {
-  const stories = STORIES.map((s) => {
-    const images = listPublicImagesIn(s.cat, { transform: "card" });
-    return { ...s, src: images[0]?.src ?? null };
-  });
-
+function StoryBlock({ s }: { s: Story }) {
   return (
-    <section className="section divider">
-      <Container>
-        <div className="text-center">
-          <span className="kicker">Izdvojene priče</span>
-          <h2 className="mt-3 font-serif text-3xl md:text-4xl">
-            Parovi koje smo pratili
-          </h2>
-          <p className="lead mx-auto mt-3 max-w-xl">
-            Svako venčanje je priča za sebe. Izdvojili smo tri koje nam posebno
-            znače.
-          </p>
+    <Link href={s.href} className="group block" aria-label={`${s.title} — album ${s.album}`}>
+      <div className="flex items-baseline justify-between gap-4 border-b border-[var(--border)] pb-3">
+        <span className="flex items-baseline gap-4">
+          <span className="text-[10px] tracking-[0.3em] text-[var(--accent-strong)]">{s.index}</span>
+          <span className="font-serif text-[21px] leading-tight md:text-[23px]">
+            {s.title}
+            <em className="serif-italic text-[var(--muted)]"> — {s.album}</em>
+          </span>
+        </span>
+        <span
+          className="hidden shrink-0 text-[10px] uppercase tracking-[0.22em] text-[var(--muted)] transition group-hover:text-[var(--accent-strong)] sm:block"
+          aria-hidden="true"
+        >
+          Pogledajte →
+        </span>
+      </div>
+      <div className={`img-frame mt-4 ${s.aspect}`}>
+        <img src={s.src} alt={s.alt} loading="lazy" className="img-zoom img-bw" />
+      </div>
+    </Link>
+  );
+}
+
+export default function FeaturedStories() {
+  return (
+    <section className="section">
+      <Container className="!max-w-[1480px] md:!px-8">
+        {/* Editorial zaglavlje: naslov levo, uvod desno */}
+        <Reveal>
+          <div className="grid gap-6 pb-10 md:grid-cols-12 md:items-end md:pb-14">
+            <div className="md:col-span-7">
+              <span className="eyebrow">Izdvojene priče</span>
+              <h2 className="display-2 mt-4 max-w-[16ch]">
+                Parovi koje smo <em className="serif-italic">pratili</em>
+              </h2>
+            </div>
+            <div className="md:col-span-5 md:pb-2">
+              <p className="lead max-w-sm leading-relaxed md:ml-auto">
+                Svako venčanje je priča za sebe — bez nameštanja, bez žurbe.
+                Izdvojili smo tri koje nam posebno znače.
+              </p>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Asimetrični grid */}
+        <div className="grid gap-x-8 gap-y-12 md:grid-cols-12">
+          <Reveal className="md:col-span-7">
+            <StoryBlock s={LEAD} />
+          </Reveal>
+
+          <div className="flex flex-col gap-12 md:col-span-5 md:pt-20">
+            {SIDE.map((s, i) => (
+              <Reveal key={s.index} delay={i * 120}>
+                <StoryBlock s={s} />
+              </Reveal>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 md:mt-14">
-          {stories.map((s) => (
-            <Link
-              key={s.cat}
-              href={`/portfolio/${s.cat}`}
-              className="group block rounded-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-strong)]"
-              aria-label={`${s.names}, ${s.location} — pogledajte album`}
-            >
-              <div className="overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--surface-2)] transition group-hover:border-[var(--accent)]">
-                <div className="aspect-[3/2]">
-                  {s.src ? (
-                    <img
-                      src={s.src}
-                      alt={s.alt}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-[var(--surface-2)]" />
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <h3 className="font-serif text-xl md:text-2xl">
-                  {s.names} — {s.location}
-                </h3>
-                <span className="mt-2 inline-block text-[11px] uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                  Pogledajte priču →
-                </span>
-              </div>
+        <Reveal>
+          <div className="mt-12 flex justify-center md:mt-16">
+            <Link href="/portfolio" className="btn-text">
+              Ceo portfolio
             </Link>
-          ))}
-        </div>
-
-        <div className="mt-10 flex justify-center md:mt-14">
-          <Link href="/portfolio" className="btn btn-outline">
-            Ceo portfolio
-          </Link>
-        </div>
+          </div>
+        </Reveal>
       </Container>
     </section>
   );

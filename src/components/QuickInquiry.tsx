@@ -22,14 +22,14 @@ const DEFAULT: FormState = {
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
-const INPUT_CLS =
-  "rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none transition focus:border-[var(--accent-strong)] focus-visible:border-[var(--accent-strong)]";
-const LABEL_CLS = "text-sm text-[var(--muted)]";
+const INPUT_CLS = "input-line";
+const LABEL_CLS = "form-label";
 
 export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState> }) {
   const [f, setF] = useState<FormState>({ ...DEFAULT, ...prefill });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<null | "ok" | "err">(null);
+  const [emailTouched, setEmailTouched] = useState(false);
 
   const [tsToken, setTsToken] = useState("");
   const widgetRef = useRef<HTMLDivElement | null>(null);
@@ -64,7 +64,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
     f.date.trim().length >= 4 &&
     f.location.trim().length >= 2 &&
     emailValid &&
-    !!tsToken;
+    (!SITE_KEY || !!tsToken);
 
   const onChange =
     (key: keyof FormState) =>
@@ -110,7 +110,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         autoComplete="off"
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
         <div className="grid gap-1">
           <label className={LABEL_CLS}>Tip događaja *</label>
           <select
@@ -130,7 +130,8 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
             type="date"
             value={f.date}
             onChange={onChange("date")}
-            className={INPUT_CLS}
+            onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+            className={`${INPUT_CLS} relative`}
             required
           />
         </div>
@@ -146,18 +147,24 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
           />
         </div>
 
-        <div className="grid gap-1">
+        <div className="relative grid gap-1">
           <label className={LABEL_CLS}>Email *</label>
           <input
             type="email"
             value={f.email}
             onChange={onChange("email")}
+            onBlur={() => setEmailTouched(true)}
             className={INPUT_CLS}
             placeholder="npr. korisnik@email.com"
             required
-            aria-invalid={!emailValid}
+            aria-invalid={emailTouched && !emailValid}
           />
-          {!emailValid && <span className="text-xs text-red-700">Unesite validan email.</span>}
+          {/* Poruka van toka — red forme se nikad ne pomera */}
+          {emailTouched && f.email.trim() !== "" && !emailValid && (
+            <span className="form-error absolute -bottom-5 left-0">
+              Unesite validan email.
+            </span>
+          )}
         </div>
 
         <div className="grid gap-1 md:col-span-2">
@@ -172,10 +179,14 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
       </div>
 
-      {/* TURNSTILE WIDGET */}
-      <div className="mt-1">
-        <div ref={widgetRef} className="min-h-[70px]" />
-      </div>
+      {/* TURNSTILE WIDGET — prostor se rezerviše samo kada ključ postoji */}
+      {SITE_KEY ? (
+        <div className="mt-1">
+          <div ref={widgetRef} className="min-h-[70px]" />
+        </div>
+      ) : (
+        <div ref={widgetRef} className="hidden" />
+      )}
 
       <div className="mt-2 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div className="text-xs text-[var(--muted)]">
@@ -184,7 +195,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         <button
           type="submit"
           disabled={!canSubmit || sending}
-          className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-70"
+          className="btn btn-primary disabled:cursor-not-allowed"
           title={canSubmit ? "Proverite svoj datum" : !tsToken ? "Potvrdite captcha" : "Popunite obavezna polja"}
         >
           {sending ? "Slanje…" : sent === "ok" ? "Poslato ✓" : "Proverite svoj datum"}
@@ -197,7 +208,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
       )}
       {sent === "err" && (
-        <div className="text-sm text-red-700">
+        <div className="form-error text-sm">
           Ups, nešto nije u redu. Pokušajte kasnije ili nas kontaktirajte direktno emailom/telefonom.
         </div>
       )}

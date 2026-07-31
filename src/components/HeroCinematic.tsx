@@ -1,0 +1,151 @@
+// src/components/HeroCinematic.tsx
+// Full-bleed kinematski hero: video (md+) / fotografija (mobilni) preko celog
+// ekrana, scrim za čitljivost, naslov dole-levo, scroll indikator.
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+
+type Props = {
+  ctaHref?: string;
+  /** Fallback fotografija — mobilni + dok se video ne učita */
+  poster?: string;
+};
+
+export default function HeroCinematic({
+  ctaHref = "/upit",
+  poster = "/home/hero-mobile.jpg",
+}: Props) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setShowVideo(mq.matches && !reduced.matches);
+    update();
+    mq.addEventListener("change", update);
+    reduced.addEventListener("change", update);
+    return () => {
+      mq.removeEventListener("change", update);
+      reduced.removeEventListener("change", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = muted;
+    v.play().catch(() => {});
+  }, [muted, showVideo]);
+
+  return (
+    <section className="relative min-h-[640px] w-full overflow-hidden bg-[var(--ink)] text-[var(--ink-fg)]" style={{ height: "100svh" }}>
+      {/* Pozadina: fotografija uvek, video preko nje na md+ */}
+      <img
+        src={poster}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
+        style={{ filter: "grayscale(1) contrast(1.06)" }}
+      />
+      {showVideo && (
+        <video
+          ref={videoRef}
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={poster}
+          style={{ filter: "saturate(0.55) contrast(1.05)" }}
+        >
+          <source src="/hero/hero.mp4" type="video/mp4" />
+        </video>
+      )}
+
+      {/* Scrim — jak gore (čitljiv logo i na svetlom nebu), jak dole (naslov) */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden="true"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(15,13,11,0.30) 0%, rgba(15,13,11,0.10) 26%, rgba(15,13,11,0.14) 46%, rgba(15,13,11,0.80) 100%)",
+        }}
+      />
+
+      {/* Sadržaj — blaga senka čuva čitljivost preko svetlih delova kadra */}
+      <div
+        className="absolute inset-x-0 bottom-0"
+        style={{ textShadow: "0 1px 12px rgba(15,13,11,0.45)" }}
+      >
+        <div className="mx-auto w-full max-w-[1480px] px-5 pb-10 md:px-8 md:pb-14">
+          <p className="eyebrow eyebrow--light">
+            <span className="md:hidden">Foto i film — Užice · Srbija</span>
+            <span className="hidden md:inline">
+              Fotografija i film venčanja — Užice · Zlatibor · Srbija
+            </span>
+          </p>
+          <h1 className="mt-4 max-w-[13ch] text-[clamp(46px,7.5vw,116px)] leading-[0.96]">
+            Priče koje ostaju <em className="serif-italic">zauvek</em>.
+          </h1>
+
+          <div className="mt-8 flex flex-col gap-8 md:mt-10 md:flex-row md:items-end md:justify-between">
+            <p className="max-w-md font-serif text-[16px] leading-relaxed text-[var(--ink-fg)]/85 md:text-[17px]">
+              Tiho prisustvo, prirodni kadrovi i emocija koja se ne režira —
+              od spremanja do poslednjeg plesa.
+            </p>
+            <div className="flex flex-wrap items-center gap-7">
+              <Link href={ctaHref} className="btn btn-light">
+                Proverite svoj datum
+              </Link>
+              <Link
+                href="/portfolio"
+                className="text-[11px] uppercase tracking-[0.16em] text-[var(--ink-fg)]/70 transition hover:text-[var(--ink-fg)]"
+              >
+                Pogledajte priče →
+              </Link>
+            </div>
+          </div>
+
+          {/* Donja meta linija */}
+          <div className="mt-10 hidden items-center justify-between border-t border-white/15 pt-5 md:flex">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--ink-fg)]/55">
+              Dokumentarno · U boji i crno-belo
+            </span>
+            <span className="flex items-center gap-3 text-[10px] uppercase tracking-[0.3em] text-[var(--ink-fg)]/55">
+              Skrolujte
+              <span className="scroll-line relative block h-px w-10 overflow-hidden bg-white/25" aria-hidden="true">
+                <span className="absolute inset-y-0 left-0 w-1/2 animate-[heroline_2.2s_ease-in-out_infinite] bg-[var(--ink-fg)]/80" />
+              </span>
+            </span>
+            {showVideo ? (
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="text-[10px] uppercase tracking-[0.3em] text-[var(--ink-fg)]/55 transition hover:text-[var(--ink-fg)]"
+                aria-label={muted ? "Uključite zvuk" : "Isključite zvuk"}
+              >
+                {muted ? "Zvuk — isklj." : "Zvuk — uklj."}
+              </button>
+            ) : (
+              <span className="w-24" aria-hidden="true" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes heroline {
+          0% { transform: translateX(-100%); }
+          55% { transform: translateX(200%); }
+          100% { transform: translateX(200%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-line span { animation: none; }
+        }
+      `}</style>
+    </section>
+  );
+}

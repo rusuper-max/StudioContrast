@@ -11,10 +11,14 @@ import { altForImage } from "@/lib/alt";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Props = { params: { cat: string }, searchParams: { from?: string } };
+type Props = {
+  params: Promise<{ cat: string }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
-export function generateMetadata({ params }: Props) {
-  const cat = isCatSlug(params.cat) ? (params.cat as CatSlug) : null;
+export async function generateMetadata({ params }: Props) {
+  const { cat: raw } = await params;
+  const cat = isCatSlug(raw) ? (raw as CatSlug) : null;
   const label = cat ? CAT_LABEL[cat] : null;
   return label
     ? {
@@ -24,9 +28,10 @@ export function generateMetadata({ params }: Props) {
     : { title: "Priče | Studio Contrast" };
 }
 
-export default function FullCategoryPage({ params, searchParams }: Props) {
-  if (!isCatSlug(params.cat)) return notFound();
-  const cat = params.cat as CatSlug;
+export default async function FullCategoryPage({ params, searchParams }: Props) {
+  const { cat: raw } = await params;
+  if (!isCatSlug(raw)) return notFound();
+  const cat = raw as CatSlug;
   const label = CAT_LABEL[cat];
 
   const items = listPublicImagesIn(cat).map((it, i) => ({
@@ -35,7 +40,7 @@ export default function FullCategoryPage({ params, searchParams }: Props) {
   }));
   if (!items.length) return notFound();
 
-  const fromHome = searchParams?.from === "home";
+  const fromHome = (await searchParams)?.from === "home";
   const backToStory = `/portfolio/${cat}${fromHome ? "?from=home" : ""}`;
 
   return (

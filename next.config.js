@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Bez dev badge-a u uglu (smeta vizuelnim pregledima)
+  devIndicators: false,
+
   // Pokaži Next-u tačan “root” (sprečava lutanje zbog više lockfile-ova)
   turbopack: {
     root: __dirname,

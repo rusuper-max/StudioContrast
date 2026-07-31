@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
+import Reveal from "@/components/Reveal";
 import Link from "next/link";
 import FaqListClient, { type FaqLite } from "@/components/FaqListClient";
 
@@ -256,37 +257,59 @@ export default function FAQPage() {
   return (
     <>
       <Navbar />
-      <main className="section">
-        <Container>
-          {/* Header */}
-          <div className="text-center">
-            <span className="kicker">FAQ</span>
-            <h1 className="mt-3">Česta pitanja</h1>
-            <p className="lead mx-auto mt-4 max-w-2xl">
-              Kratak vodič kroz najvažnije informacije — ako vam nešto nije jasno,{" "}
-              <Link href="/kontakt" className="link">pišite nam</Link>.
-            </p>
-          </div>
+      <main className="section pt-16 md:pt-24">
+        <Container className="!max-w-[1480px] md:!px-8">
+          {/* Zaglavlje — editorial split: naslov levo, uvod desno */}
+          <Reveal>
+            <div className="grid gap-6 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-7">
+                <span className="eyebrow">FAQ</span>
+                <h1 className="display-2 mt-4 max-w-[14ch]">
+                  Česta <em className="serif-italic">pitanja</em>
+                </h1>
+              </div>
+              <div className="md:col-span-5 md:pb-2">
+                <p className="lead max-w-sm leading-relaxed md:ml-auto">
+                  Kratak vodič kroz najvažnije informacije — ako vam nešto nije
+                  jasno, <Link href="/kontakt" className="link">pišite nam</Link>.
+                </p>
+              </div>
+            </div>
+          </Reveal>
 
-          {/* TOC */}
-          <div className="card mx-auto mt-10 max-w-3xl p-5 md:p-6">
-            <span className="kicker">Brzi skok</span>
-            <ul className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
-              {FAQ.map((f) => (
-                <li key={f.id}>
-                  <a href={`#${f.id}`} className="link text-sm text-[var(--muted)]">{f.q}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Sadržaj — brzi skok levo (sticky), pitanja desno */}
+          <div className="mt-12 grid gap-12 border-t border-[var(--border)] pt-10 md:mt-16 md:grid-cols-12 md:gap-8 md:pt-14">
+            <Reveal className="md:col-span-4 lg:col-span-3">
+              <nav aria-label="Brzi skok" className="md:sticky md:top-28">
+                <span className="meta-caps">Brzi skok</span>
+                <ul className="mt-5 space-y-2.5">
+                  {FAQ.map((f, i) => (
+                    <li key={f.id} className="flex items-baseline gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-[9px] tracking-[0.25em] text-[var(--accent-strong)]"
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <a href={`#${f.id}`} className="link text-[13px] leading-snug text-[var(--muted)]">
+                        {f.q}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </Reveal>
 
-          {/* Lista pitanja (client) */}
-          <FaqListClient items={lite} />
+            {/* Lista pitanja (client) */}
+            <Reveal delay={120} className="md:col-span-8 lg:col-span-8 lg:col-start-5">
+              <FaqListClient items={lite} />
 
-          {/* CTA */}
-          <div className="mt-12 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/ponude" className="btn btn-outline">Pogledajte ponude</Link>
-            <Link href="/upit" className="btn btn-primary">Proverite svoj datum</Link>
+              <div className="mt-12 flex justify-center md:mt-14">
+                <Link href="/ponude" className="btn-text">
+                  Sastavite svoju ponudu
+                </Link>
+              </div>
+            </Reveal>
           </div>
         </Container>
       </main>

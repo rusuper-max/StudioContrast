@@ -2,12 +2,13 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
-import HeroVideo from "@/components/HeroVideo";
+import HeroCinematic from "@/components/HeroCinematic";
 import ScrollRestorer from "@/components/ScrollRestorer";
 import FeaturedStories from "@/components/FeaturedStories";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import PackageCards from "@/components/PackageCards";
 import QuickInquiry from "@/components/QuickInquiry";
+import Reveal from "@/components/Reveal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,10 +19,16 @@ export const metadata = {
     "Fotografisanje Užice i Zlatibor: prirodni trenuci, istinite emocije i upečatljive fotografije u boji i crno-belo.",
 };
 
+const STATS = [
+  { n: "10+", label: "godina iskustva" },
+  { n: "300+", label: "događaja" },
+  { n: "25+", label: "gradova" },
+];
+
 export default function HomePage() {
   return (
     <>
-      <Navbar />
+      <Navbar variant="overlay" />
       <ScrollRestorer />
 
       <main>
@@ -32,119 +39,160 @@ export default function HomePage() {
         </p>
 
         {/* 1. Hero */}
-        <HeroVideo />
+        <HeroCinematic />
 
-        {/* 2. Trust strip */}
-        <section className="border-b border-[var(--border)] py-8 md:py-10">
-          <Container>
-            <p className="text-center text-[11px] uppercase tracking-[0.25em] text-[var(--muted)]">
-              10+ godina iskustva
-              <span className="mx-3 text-[var(--accent)]" aria-hidden="true">·</span>
-              300+ događaja
-              <span className="mx-3 text-[var(--accent)]" aria-hidden="true">·</span>
-              25+ gradova
-            </p>
+        {/* 2. Manifest + brojke */}
+        <section className="section">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <div className="grid gap-12 md:grid-cols-12">
+              <Reveal className="md:col-span-8">
+                <span className="eyebrow">Naš pristup</span>
+                <p className="display-3 mt-6 max-w-[30ch] !leading-[1.3]">
+                  Ne režiramo trenutke — <em className="serif-italic">čekamo ih</em>.
+                  Radimo tiho i diskretno, da fotografije budu ono što ste zaista
+                  bili tog dana.
+                </p>
+              </Reveal>
+              <Reveal delay={150} className="md:col-span-4 md:self-end">
+                <dl className="flex gap-10 border-t border-[var(--border)] pt-8 md:flex-col md:gap-7 md:border-t-0 md:border-l md:pl-10 md:pt-0">
+                  {STATS.map((s) => (
+                    <div key={s.label}>
+                      <dt className="sr-only">{s.label}</dt>
+                      <dd className="font-serif text-4xl leading-none md:text-5xl">
+                        {s.n}
+                      </dd>
+                      <dd className="mt-2 whitespace-nowrap text-[10px] uppercase tracking-[0.22em] text-[var(--muted)] md:text-[11px]">
+                        {s.label}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </Reveal>
+            </div>
           </Container>
         </section>
 
         {/* 3. Izdvojene priče */}
         <FeaturedStories />
 
-        {/* 4. Citat mladenaca */}
+        {/* 4. Citat mladenaca — full bleed */}
         <TestimonialsSection />
 
         {/* 5. Paketi teaser */}
-        <section className="section divider">
-          <Container>
-            <div className="text-center">
-              <span className="kicker">Paketi</span>
-              <h2 className="mt-3 font-serif text-3xl md:text-4xl">
-                Izaberite paket ili ga prilagodite
-              </h2>
-              <p className="lead mx-auto mt-3 max-w-2xl">
-                Tri pažljivo skrojene opcije. Kliknite na paket da otvorite
-                konfigurator i prilagodite dodatke.
-              </p>
-            </div>
+        <section className="section">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <Reveal>
+              <div className="grid gap-6 pb-12 md:grid-cols-12 md:items-end md:pb-16">
+                <div className="md:col-span-7">
+                  <span className="eyebrow">Paketi</span>
+                  <h2 className="display-2 mt-4 max-w-[18ch]">
+                    Izaberite paket ili ga <em className="serif-italic">prilagodite</em>
+                  </h2>
+                </div>
+                <div className="md:col-span-5 md:pb-2">
+                  <p className="lead max-w-sm text-[15px] leading-relaxed md:ml-auto">
+                    Tri pažljivo skrojene opcije — a svaki detalj možete
+                    prilagoditi u konfiguratoru.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
 
-            <div className="mt-10 md:mt-14">
+            <Reveal>
               <PackageCards />
-            </div>
+            </Reveal>
 
-            <div className="mt-10 flex justify-center">
-              <Link href="/ponude" className="btn btn-outline">
-                Sastavite svoju ponudu
-              </Link>
-            </div>
+            <Reveal>
+              <div className="mt-12 flex justify-center">
+                <Link href="/ponude" className="btn-text">
+                  Sastavite svoju ponudu
+                </Link>
+              </div>
+            </Reveal>
           </Container>
         </section>
 
         {/* 6. O nama teaser */}
-        <section className="section divider">
-          <Container>
-            <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
-              <div className="grid grid-cols-2 gap-4">
-                <img
-                  src="/about/janko.jpg"
-                  alt="Janko, fotograf Studija Contrast"
-                  loading="lazy"
-                  className="aspect-[3/4] w-full rounded-[12px] border border-[var(--border)] object-cover"
-                />
-                <img
-                  src="/about/marija.jpg"
-                  alt="Marija, fotograf Studija Contrast"
-                  loading="lazy"
-                  className="mt-8 aspect-[3/4] w-full rounded-[12px] border border-[var(--border)] object-cover"
-                />
-              </div>
-              <div className="text-center md:text-left">
-                <span className="kicker">O nama</span>
-                <h2 className="mt-3 font-serif text-3xl md:text-4xl">
-                  Mi smo Janko i Marija
+        <section className="section border-t border-[var(--border)]">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <div className="grid items-center gap-14 md:grid-cols-12 md:gap-8">
+              <Reveal className="relative md:col-span-6">
+                <div className="group relative pr-[25%]">
+                  <div className="img-frame aspect-[3/4]">
+                    <img
+                      src="/about/janko.jpg"
+                      alt="Janko, fotograf Studija Contrast"
+                      loading="lazy"
+                      className="img-zoom img-bw"
+                    />
+                  </div>
+                  <div className="img-frame absolute bottom-[12%] right-0 w-[40%] border-[8px] border-[var(--bg)]">
+                    <div className="aspect-[3/4]">
+                      <img
+                        src="/about/marija.jpg"
+                        alt="Marija, fotografkinja Studija Contrast"
+                        loading="lazy"
+                        className="img-zoom img-bw"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={120} className="md:col-span-5 md:col-start-8">
+                <span className="eyebrow">O nama</span>
+                <h2 className="display-2 mt-4">
+                  Mi smo Janko <em className="serif-italic">i</em> Marija
                 </h2>
-                <p className="lead mt-4 max-w-md md:max-w-none mx-auto">
+                <p className="lead mt-6 max-w-md text-[15px] leading-relaxed">
                   Već deset godina pratimo parove kroz najvažnije dane — tiho,
                   strpljivo i bez nameštanja. Verujemo da najlepše fotografije
                   nastaju kada zaboravite da smo tu.
                 </p>
-                <Link href="/onama" className="link mt-6 inline-block text-sm text-[var(--accent-strong)]">
-                  Upoznajte nas →
+                <Link href="/onama" className="btn-text mt-8">
+                  Upoznajte nas
                 </Link>
-              </div>
+              </Reveal>
             </div>
           </Container>
         </section>
 
         {/* 7. Brzi upit */}
-        <section className="section divider">
+        <section className="section border-t border-[var(--border)]">
           <Container>
             <div className="mx-auto max-w-3xl">
-              <div className="text-center">
-                <span className="kicker">Brzi upit</span>
-                <h2 className="mt-3 font-serif text-3xl md:text-4xl">
-                  Proverite da li je vaš datum slobodan
-                </h2>
-                <p className="lead mt-3">
-                  Napišite datum i lokaciju proslave. Odgovaramo u roku od 24h.
+              <Reveal>
+                <div className="text-center">
+                  <span className="eyebrow">Brzi upit</span>
+                  <h2 className="display-2 mt-4">
+                    Da li je vaš datum <em className="serif-italic">slobodan</em>?
+                  </h2>
+                  <p className="lead mx-auto mt-5 max-w-md text-[15px]">
+                    Napišite datum i lokaciju proslave. Odgovaramo u roku od 24h.
+                  </p>
+                </div>
+              </Reveal>
+
+              <Reveal delay={120}>
+                <div className="mt-14">
+                  <QuickInquiry />
+                </div>
+              </Reveal>
+
+              <Reveal>
+                <p className="mt-10 text-center text-sm text-[var(--muted)]">
+                  Želite detaljniju kalkulaciju?{" "}
+                  <Link href="/ponude" className="link text-[var(--accent-strong)]">
+                    Otvorite konfigurator paketa
+                  </Link>
+                  .
                 </p>
-              </div>
-
-              <div className="card mt-8 p-6 md:p-8">
-                <QuickInquiry />
-              </div>
-
-              <p className="mt-4 text-center text-sm text-[var(--muted)]">
-                Želite detaljniju kalkulaciju?{" "}
-                <Link href="/ponude" className="link text-[var(--accent-strong)]">
-                  Otvorite konfigurator paketa
-                </Link>
-                .
-              </p>
+              </Reveal>
             </div>
           </Container>
         </section>
       </main>
-      <Footer />
+      <Footer cta={false} />
     </>
   );
 }

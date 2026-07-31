@@ -2,6 +2,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { getPlanIncludes } from "@/data/planIncludes";
+import { HOME_PACKAGES } from "@/data/homePackages";
+import type { PlanSlug } from "@/data/packages";
+import type { EventType } from "@/lib/addons";
 
 export const runtime = "nodejs";
 
@@ -43,11 +47,24 @@ const PLAN_NAME: Record<string, string> = {
   signature: "Signature",
 };
 
-const PLAN_ACCENT: Record<string, string> = {
-  basic: "#94a3b8",      // slate-400
-  classic: "#eab308",    // amber-500 (zlatno)
-  signature: "#14b8a6",  // teal-500
+/* Brend paleta (isti tokeni kao na sajtu) */
+const C = {
+  bg: "#FAF7F2",
+  surface: "#FFFFFF",
+  ink: "#171412",
+  fg: "#211E1A",
+  muted: "#6E6759",
+  border: "#E7DFD1",
+  accent: "#8A6F3C",
+  inkFg: "#F6F1E7",
 };
+
+/** "2026-08-22" -> "22.08.2026." (ostalo vraća nepromenjeno) */
+function formatDate(raw?: string): string {
+  const s = String(raw ?? "").trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  return m ? `${m[3]}.${m[2]}.${m[1]}.` : s;
+}
 
 function prettyLabel(key: string) {
   const k = (key || "").toLowerCase();
@@ -64,6 +81,61 @@ function prettyLabel(key: string) {
   if (k === "usb") return "USB";
   if (k === "dontpublish") return "Ne objavljuj u portfoliju / na mrežama";
   return key;
+}
+
+/**
+ * Šta paket sadrži — isto što klijent vidi u konfiguratoru:
+ *  1) osnovne stavke plana za taj tip događaja (statički podaci),
+ *  2) marketing stavke paketa sa sajta,
+ *  3) addoni koji su za taj tip/plan označeni kao "uključeno" (iz tabele),
+ *  4) dodatne stavke i napomena iz tabele.
+ * Tačke 3–4 zavise od /api/inquiry/addons; ako on padne, mejl i dalje
+ * sadrži 1) i 2) — nikad se ne šalje bez sadržaja paketa.
+ */
+async function loadPackageContents(
+  origin: string,
+  eventType: string,
+  plan: PlanSlug | ""
+): Promise<{ base: string[]; addons: string[]; extras: string[]; note: string }> {
+  const out = { base: [] as string[], addons: [] as string[], extras: [] as string[], note: "" };
+  if (!plan) return out;
+
+  // 1) + 2) statički izvori — uvek dostupni
+  out.base = getPlanIncludes(eventType as EventType, plan);
+  const marketing = HOME_PACKAGES[plan]?.bullets ?? [];
+  for (const b of marketing) {
+    if (!out.base.some((x) => x.toLowerCase() === b.toLowerCase())) out.base.push(b);
+  }
+
+  // 3) + 4) živi podaci iz tabele dodataka
+  try {
+    const res = await fetch(`${origin}/api/inquiry/addons?debug=0`, {
+      cache: "no-store",
+      // tabela ne sme da zadrži slanje mejla
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const rules = data?.addons?.[eventType]?.[plan] ?? {};
+      out.addons = Object.entries(rules)
+        .filter(([key, rule]: [string, any]) => rule?.state === "included" && key !== "dontPublish")
+        .map(([key]) => prettyLabel(key));
+
+      const extrasRaw: string[] = data?.extrasIncluded?.[eventType]?.[plan] ?? [];
+      const seen = new Set<string>();
+      out.extras = extrasRaw.filter((x) => {
+        const k = String(x).trim().toLowerCase();
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+
+      out.note = String(data?.notes?.[eventType]?.[plan] ?? "");
+    }
+  } catch {
+    /* tabela nedostupna — ostaju statičke stavke */
+  }
+  return out;
 }
 
 /** Preferira body.addons[], ali radi i sa starim boolean poljima. */
@@ -107,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     const planSlug = String(body?.plan || "");
     const planName = PLAN_NAME[planSlug] || (planSlug ? planSlug : "—");
-    const accent = PLAN_ACCENT[planSlug] || "#6b7280";
+    const dateDisplay = formatDate(body?.date);
 
     const priceHintNum = Number(body?.priceHint || 0);
     const priceHint = Number.isFinite(priceHintNum) && priceHintNum > 0
@@ -119,47 +191,126 @@ export async function POST(req: NextRequest) {
 
     const addons = extractAddons(body);
     const addonsHtml = addons.length
-      ? addons.map((k) =>
-          `<span style="display:inline-block;margin:2px 6px 2px 0;padding:.25rem .5rem;border:1px solid #e5e7eb;border-radius:999px;background:#f8fafc;color:#0f172a;font-size:12px;">${escapeHtml(prettyLabel(k))}</span>`
-        ).join("")
-      : "—";
+      ? `<ul style="margin:0;padding-left:18px;">${addons
+          .map((k) => `<li style="margin:3px 0;">${escapeHtml(prettyLabel(k))}</li>`)
+          .join("")}</ul>`
+      : `<span style="color:${C.muted};">—</span>`;
     const addonsText = addons.length ? addons.map((k) => prettyLabel(k)).join(", ") : "—";
 
-    const subject = `📩 Upit — ${typeDisplay} (${planName})`;
+    /* Sadržaj paketa — da se ne mora otvarati sajt da bi se videlo šta paket nosi */
+    const origin = new URL(req.url).origin || process.env.NEXT_PUBLIC_SITE_URL || "";
+    const contents = await loadPackageContents(origin, typeDisplay, planSlug as PlanSlug | "");
+    const contentItems = [...contents.base, ...contents.addons, ...contents.extras];
 
-    // HTML
+    const contentsHtml = contentItems.length
+      ? `<ul style="margin:0;padding-left:18px;">${contentItems
+          .map((it) => `<li style="margin:3px 0;">${escapeHtml(it)}</li>`)
+          .join("")}</ul>${
+          contents.note
+            ? `<div style="margin-top:10px;font-style:italic;color:${C.muted};">${escapeHtml(contents.note)}</div>`
+            : ""
+        }`
+      : `<div style="color:${C.muted};">Sadržaj paketa nije bilo moguće učitati — proverite tabelu dodataka.</div>`;
+
+    const contentsText = contentItems.length
+      ? contentItems.map((it) => `  • ${it}`).join("\n") +
+        (contents.note ? `\n  Napomena: ${contents.note}` : "")
+      : "  (sadržaj paketa nije bilo moguće učitati)";
+
+    // Subject nosi ono po čemu se upit prepoznaje u inboxu: tip, datum, mesto
+    const locationShort = String(body?.location || "").trim();
+    const subject = `Upit — ${typeDisplay}${dateDisplay ? `, ${dateDisplay}` : ""}${
+      locationShort ? ` · ${locationShort}` : ""
+    } (${planName})`;
+
+    /* ── HTML: ista paleta i ritam kao sajt (ivory, ink, šampanj, hairline) ── */
+    const sansStack =
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+    const serifStack = "Georgia,'Times New Roman',Times,serif";
+
+    const eyebrow = (t: string) =>
+      `<div style="font:600 11px/1.4 ${sansStack};text-transform:uppercase;letter-spacing:.18em;color:${C.accent};margin:0 0 10px;">${t}</div>`;
+
+    const row = (label: string, value: string) =>
+      `<tr>
+         <td style="padding:9px 0;border-bottom:1px solid ${C.border};font:400 13px/1.5 ${sansStack};color:${C.muted};white-space:nowrap;vertical-align:top;width:132px;">${label}</td>
+         <td style="padding:9px 0;border-bottom:1px solid ${C.border};font:400 15px/1.5 ${sansStack};color:${C.fg};">${value}</td>
+       </tr>`;
+
+    const block = (title: string, inner: string) =>
+      `<div style="margin:28px 0 0;padding:20px;border:1px solid ${C.border};background:${C.bg};">
+         ${eyebrow(title)}
+         <div style="font:400 14px/1.6 ${sansStack};color:${C.fg};">${inner}</div>
+       </div>`;
+
     const html = `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#0f172a;">
-        <div style="background:linear-gradient(180deg,#0ea5e9,#14b8a6);padding:14px 18px;border-radius:12px;color:white;font-weight:600;margin-bottom:14px;">
-          📸 Novi upit sa sajta Studio Contrast
-        </div>
+      <div style="margin:0;padding:24px 12px;background:${C.bg};">
+        <div style="max-width:600px;margin:0 auto;background:${C.surface};border:1px solid ${C.border};">
 
-        <p><strong>Tip događaja:</strong> ${escapeHtml(typeDisplay)}</p>
-        <p><strong>Datum:</strong> ${escapeHtml(body?.date || "-")} (${start || "-"}–${end || "-"})</p>
-        <p><strong>Lokacija:</strong> ${escapeHtml(body?.location || "-")}</p>
-        <p><strong>Paket:</strong>
-          <span style="display:inline-block;margin-left:6px;border:1px solid ${accent};color:${accent};padding:.15rem .55rem;border-radius:999px;font-weight:700;">
-            ${escapeHtml(planName)}
-          </span>
-        </p>
+          <div style="background:${C.ink};padding:26px 28px;">
+            <div style="font:400 24px/1.2 ${serifStack};color:${C.inkFg};">Studio <em>Contrast</em></div>
+            <div style="font:600 11px/1.4 ${sansStack};text-transform:uppercase;letter-spacing:.22em;color:${C.accent};margin-top:8px;">Novi upit sa sajta</div>
+          </div>
 
-        <div style="margin:16px 0;padding:12px;border:1px solid ${accent}40;border-radius:12px;background:#f9fafb;">
-          <div style="font-weight:700;margin-bottom:6px;color:${accent}">Iz konfiguratora</div>
-          <div><strong>Odabrani dodaci:</strong> ${addonsHtml}</div>
-          ${extraHours ? `<div style="margin-top:6px;"><strong>Dodatni sati:</strong> ${extraHours}</div>` : ""}
-          ${priceHint ? `<div style="margin-top:6px;"><strong>Orijentaciona cena:</strong> ~${priceHint} €</div>` : ""}
-        </div>
+          <div style="padding:28px;">
+            <div style="font:400 26px/1.2 ${serifStack};color:${C.fg};margin:0 0 4px;">${escapeHtml(typeDisplay)}</div>
+            <div style="font:400 14px/1.5 ${sansStack};color:${C.muted};margin:0 0 22px;">
+              Paket <strong style="color:${C.accent};">${escapeHtml(planName)}</strong>${
+                priceHint ? ` · orijentaciono ~${priceHint} €` : ""
+              }
+            </div>
 
-        <div style="margin-top:10px;">
-          <div style="font-weight:700;margin-bottom:4px;">Kontakt</div>
-          <div><strong>Ime:</strong> ${escapeHtml(body?.name || "-")}</div>
-          <div><strong>Telefon:</strong> ${escapeHtml(body?.phone || "-")}</div>
-          <div><strong>Email:</strong> ${escapeHtml(body?.email || "-")}</div>
-        </div>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border-top:1px solid ${C.border};">
+              ${row("Datum", `${escapeHtml(dateDisplay || "—")}${start || end ? ` <span style="color:${C.muted};">(${start || "—"}–${end || "—"})</span>` : ""}`)}
+              ${row("Lokacija", escapeHtml(body?.location || "—"))}
+              ${row(
+                "Ime",
+                `<strong>${escapeHtml(body?.name || "—")}</strong>`
+              )}
+              ${row(
+                "Telefon",
+                body?.phone
+                  ? `<a href="tel:${escapeHtml(String(body.phone).replace(/\s+/g, ""))}" style="color:${C.fg};text-decoration:underline;">${escapeHtml(body.phone)}</a>`
+                  : "—"
+              )}
+              ${row(
+                "Email",
+                body?.email
+                  ? `<a href="mailto:${escapeHtml(body.email)}" style="color:${C.fg};text-decoration:underline;">${escapeHtml(body.email)}</a>`
+                  : "—"
+              )}
+            </table>
 
-        <div style="margin-top:10px;">
-          <div style="font-weight:700;margin-bottom:4px;">Poruka</div>
-          <div>${escapeHtml(body?.message || "-").replace(/\n/g, "<br/>")}</div>
+            ${block(`Šta paket ${escapeHtml(planName)} uključuje`, contentsHtml)}
+
+            ${block(
+              "Dodaci koje je klijent izabrao",
+              `${addonsHtml}
+               ${extraHours ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid ${C.border};">Dodatni sati: <strong>${extraHours}</strong> <span style="color:${C.muted};">(+${extraHours * 60} €)</span></div>` : ""}
+               ${priceHint ? `<div style="margin-top:${extraHours ? "6px" : "12px"};${extraHours ? "" : `padding-top:12px;border-top:1px solid ${C.border};`}">Orijentaciona cena: <strong style="font:400 20px/1.2 ${serifStack};">~${priceHint} €</strong></div>` : ""}`
+            )}
+
+            ${
+              body?.message
+                ? block(
+                    "Poruka klijenta",
+                    `<div style="font:400 15px/1.65 ${serifStack};color:${C.fg};">${escapeHtml(body.message).replace(/\n/g, "<br/>")}</div>`
+                  )
+                : ""
+            }
+
+            ${
+              body?.email
+                ? `<div style="margin-top:28px;">
+                     <a href="mailto:${escapeHtml(body.email)}" style="display:inline-block;background:${C.ink};color:${C.inkFg};font:600 11px/1 ${sansStack};text-transform:uppercase;letter-spacing:.16em;padding:15px 28px;text-decoration:none;">Odgovorite klijentu</a>
+                   </div>`
+                : ""
+            }
+          </div>
+
+          <div style="border-top:1px solid ${C.border};padding:16px 28px;font:400 11px/1.5 ${sansStack};text-transform:uppercase;letter-spacing:.14em;color:${C.muted};">
+            studiocontrast.rs · Carinska 4, Užice
+          </div>
         </div>
       </div>
     `;
@@ -167,9 +318,12 @@ export async function POST(req: NextRequest) {
     // TEXT
     const text = [
       `Tip događaja: ${typeDisplay}`,
-      `Datum: ${body?.date || "-"} (${start || "-"}–${end || "-"})`,
+      `Datum: ${dateDisplay || "-"} (${start || "-"}–${end || "-"})`,
       `Lokacija: ${body?.location || "-"}`,
       `Paket: ${planName}`,
+      ``,
+      `Šta paket ${planName} uključuje:`,
+      contentsText,
       ``,
       `Odabrani dodaci: ${addonsText}`,
       extraHours ? `Dodatni sati: ${extraHours}` : ``,

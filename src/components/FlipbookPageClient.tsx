@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import FlipbookOverlay, { FlipItem } from "./FlipbookOverlay";
 import Lightbox from "./Lightbox";
-
-type Row = { start: number; items: FlipItem[] };
+import { photoCountLabel } from "@/lib/alt";
 
 /**
- * Editorial galerija kategorije: naizmenično krupna fotografija pune širine,
- * pa red od 2–3 manje. Klik otvara lightbox; "Prelistaj kao album" otvara
- * postojeći FlipbookOverlay kao sekundarni prikaz.
+ * Editorial galerija kategorije: masonry kolone sa prirodnim proporcijama
+ * fotografija i velikodušnim belinama. Klik otvara lightbox; "Prelistajte kao
+ * album" otvara postojeći FlipbookOverlay kao sekundarni prikaz.
+ *
+ * Raspored: dok se ne saznaju proporcije, CSS kolone; kada su sve slike
+ * učitane, prelazi se na raspodelu "najkraća kolona prvo" (redosled očuvan)
+ * da dna kolona ostanu poravnata (razlika < jedne fotografije).
  */
 export default function FlipbookPageClient({
   gridItems,
@@ -25,99 +27,163 @@ export default function FlipbookPageClient({
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [albumOpen, setAlbumOpen] = useState(false);
+  const [ratios, setRatios] = useState<(number | null)[]>(() =>
+    Array(gridItems.length).fill(null)
+  );
+  const [cols, setCols] = useState(1);
 
-  // Ritam redova: 1 puna širina, pa 3 manje, pa 1 puna, pa 2 manje...
-  const rows = useMemo<Row[]>(() => {
-    const out: Row[] = [];
-    let i = 0;
-    let block = 0;
-    while (i < gridItems.length) {
-      out.push({ start: i, items: [gridItems[i]] });
-      i += 1;
-      const take = block % 2 === 0 ? 3 : 2;
-      const slice = gridItems.slice(i, i + take);
-      if (slice.length) out.push({ start: i, items: slice });
-      i += take;
-      block += 1;
+  // Broj kolona prati breakpointe; sa malo fotografija 2 šire kolone
+  // deluju premium i balansiraju se bolje od 3 izgladnele.
+  useEffect(() => {
+    const sm = window.matchMedia("(min-width: 640px)");
+    const lg = window.matchMedia("(min-width: 1024px)");
+    const update = () =>
+      setCols(lg.matches ? (gridItems.length >= 9 ? 3 : 2) : sm.matches ? 2 : 1);
+    update();
+    sm.addEventListener("change", update);
+    lg.addEventListener("change", update);
+    return () => {
+      sm.removeEventListener("change", update);
+      lg.removeEventListener("change", update);
+    };
+  }, [gridItems.length]);
+
+  const onImgLoad = (i: number, img: HTMLImageElement) => {
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    setRatios((r) => {
+      if (r[i]) return r;
+      const next = [...r];
+      next[i] = img.naturalWidth / img.naturalHeight;
+      return next;
+    });
+  };
+
+  const allKnown = ratios.every((r) => r !== null);
+
+  // Optimalna uzastopna podela u kolone (čuva strogi redosled, minimizuje
+  // najvišu kolonu) — dna kolona ostaju poravnata koliko sadržaj dozvoljava.
+  const distributed = useMemo(() => {
+    if (!allKnown || cols < 2) return null;
+    const n = gridItems.length;
+    const h = ratios.map((r) => 1 / (r as number) + 0.08); // visina + razmak
+
+    // 1) Pohlepna raspodela po redu (u najkraću kolonu)
+    const assign: number[] = Array(n).fill(0);
+    {
+      const heights = Array(cols).fill(0);
+      for (let i = 0; i < n; i++) {
+        let t = 0;
+        for (let c = 1; c < cols; c++) if (heights[c] < heights[t]) t = c;
+        assign[i] = t;
+        heights[t] += h[i];
+      }
     }
-    return out;
-  }, [gridItems]);
+    // 2) Lokalno doterivanje: premeštaj pojedinačne stavke dok se raspon
+    //    (najviša − najniža kolona) smanjuje; unutar kolone redosled je po
+    //    indeksu, pa vizuelni tok ostaje očuvan.
+    const colHeights = () => {
+      const hs = Array(cols).fill(0);
+      for (let i = 0; i < n; i++) hs[assign[i]] += h[i];
+      return hs;
+    };
+    const spreadOf = (hs: number[]) => Math.max(...hs) - Math.min(...hs);
+    for (let pass = 0; pass < 24; pass++) {
+      const hs = colHeights();
+      let improved = false;
+      for (let i = 0; i < n; i++) {
+        const from = assign[i];
+        for (let to = 0; to < cols; to++) {
+          if (to === from) continue;
+          // kolona ne sme da ostane prazna
+          if (assign.filter((a) => a === from).length === 1) continue;
+          const trial = [...hs];
+          trial[from] -= h[i];
+          trial[to] += h[i];
+          if (spreadOf(trial) + 1e-9 < spreadOf(hs)) {
+            assign[i] = to;
+            hs[from] = trial[from];
+            hs[to] = trial[to];
+            improved = true;
+          }
+        }
+      }
+      if (!improved) break;
+    }
+
+    const columns: { item: FlipItem; i: number }[][] = Array.from(
+      { length: cols },
+      () => []
+    );
+    gridItems.forEach((item, i) => columns[assign[i]].push({ item, i }));
+    return columns;
+  }, [allKnown, cols, gridItems, ratios]);
 
   const zoomLabel = (it: FlipItem, idx: number) =>
     `Uvećaj: ${it.alt ?? `${label ?? "fotografija"} ${idx + 1}`}`;
 
-  const tileClass =
-    "group relative block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)]";
+  const renderTile = (it: FlipItem, i: number) => (
+    <button
+      key={i}
+      type="button"
+      onClick={() => setOpenIndex(i)}
+      aria-label={zoomLabel(it, i)}
+      className="group mb-6 block w-full break-inside-avoid cursor-zoom-in rounded-[var(--radius)] md:mb-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-strong)]"
+    >
+      <span className="img-frame block">
+        <img
+          src={it.src}
+          alt={it.alt ?? `Fotografija ${i + 1}`}
+          loading="eager"
+          onLoad={(e) => onImgLoad(i, e.currentTarget)}
+          ref={(el) => {
+            // Keširane slike se učitaju pre hidratacije — onLoad tada ne okine
+            if (el && el.complete && el.naturalWidth) onImgLoad(i, el);
+          }}
+          className="img-zoom w-full"
+          style={{ height: "auto" }}
+        />
+      </span>
+    </button>
+  );
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Kontrolni red — hairline kao potpisi na naslovnoj: meta levo, album desno */}
+      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-[var(--border)] pb-3">
+        <span className="meta-caps">
+          Galerija · {photoCountLabel(gridItems.length)}
+        </span>
         <button
           type="button"
           onClick={() => setAlbumOpen(true)}
-          className="btn btn-outline"
+          className="btn-text !text-[11px]"
           aria-haspopup="dialog"
           aria-expanded={albumOpen}
         >
-          Prelistaj kao album
+          Prelistajte kao album
         </button>
       </div>
 
-      <div className="mt-8 space-y-4 md:space-y-6" aria-label={label ? `Galerija: ${label}` : "Galerija"}>
-        {rows.map((row) =>
-          row.items.length === 1 ? (
-            <button
-              key={row.start}
-              type="button"
-              onClick={() => setOpenIndex(row.start)}
-              aria-label={zoomLabel(row.items[0], row.start)}
-              className={`${tileClass} aspect-[3/2]`}
-            >
-              <Image
-                src={row.items[0].src}
-                alt={row.items[0].alt ?? `Fotografija ${row.start + 1}`}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.015]"
-                sizes="(max-width: 1200px) 100vw, 1152px"
-                priority={row.start === 0}
-              />
-            </button>
-          ) : (
-            <div
-              key={row.start}
-              className={`grid gap-4 md:gap-6 ${
-                row.items.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
-              }`}
-            >
-              {row.items.map((it, j) => {
-                const idx = row.start + j;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setOpenIndex(idx)}
-                    aria-label={zoomLabel(it, idx)}
-                    className={`${tileClass} aspect-[4/3]`}
-                  >
-                    <Image
-                      src={it.src}
-                      alt={it.alt ?? `Fotografija ${idx + 1}`}
-                      fill
-                      loading="lazy"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.015]"
-                      sizes={
-                        row.items.length >= 3
-                          ? "(max-width: 640px) 100vw, (max-width: 1200px) 33vw, 384px"
-                          : "(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 568px"
-                      }
-                    />
-                  </button>
-                );
-              })}
+      {/* Masonry — balansirane kolone kada su proporcije poznate */}
+      {distributed ? (
+        <div
+          className="mt-8 flex gap-6 md:mt-10 md:gap-10"
+          aria-label={label ? `Galerija: ${label}` : "Galerija"}
+        >
+          {distributed.map((column, c) => (
+            <div key={c} className="min-w-0 flex-1">
+              {column.map(({ item, i }) => renderTile(item, i))}
             </div>
-          )
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="mt-8 columns-1 gap-6 sm:columns-2 lg:columns-3 md:mt-10 md:gap-10"
+          aria-label={label ? `Galerija: ${label}` : "Galerija"}
+        >
+          {gridItems.map((it, i) => renderTile(it, i))}
+        </div>
+      )}
 
       {openIndex !== null && (
         <Lightbox

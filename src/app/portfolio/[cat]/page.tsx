@@ -1,12 +1,16 @@
+// src/app/portfolio/[cat]/page.tsx
+// Stranica kategorije — editorial zaglavlje (eyebrow + display naslov + lead)
+// i masonry galerija prirodnih proporcija. Lightbox i flipbook ostaju.
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Container from "@/components/Container";
+import Reveal from "@/components/Reveal";
 import Link from "next/link";
 import FlipbookPageClient from "@/components/FlipbookPageClient";
 import { notFound } from "next/navigation";
 import { CAT_LABEL, isCatSlug, type CatSlug } from "@/data/portfolio";
-import { listPublicImagesIn } from "@/lib/listPublicImages";
-import { altForImage, photoCountLabel } from "@/lib/alt";
+import { listPublicImagesIn, listPortfolioCats } from "@/lib/listPublicImages";
+import { altForImage } from "@/lib/alt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,10 +33,13 @@ const CAT_INTRO: Record<CatSlug, string> = {
     "Kada sklonimo boju, ostanu svetlo i emocija. Izbor fotografija koje u crno-beloj verziji dobijaju novu težinu.",
 };
 
-type Props = { params: { cat: string }, searchParams: { from?: string } };
+type Props = {
+  params: Promise<{ cat: string }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
-export function generateMetadata({ params }: Props) {
-  const raw = params.cat;
+export async function generateMetadata({ params }: Props) {
+  const { cat: raw } = await params;
   const cat = isCatSlug(raw) ? (raw as CatSlug) : null;
   const label = cat ? CAT_LABEL[cat] : null;
 
@@ -44,14 +51,19 @@ export function generateMetadata({ params }: Props) {
     : { title: "Priče | Studio Contrast" };
 }
 
-export default function CategoryStoryPage({ params, searchParams }: Props) {
-  const raw = params.cat;
+/* Prirodne proporcije za masonry — umesto podrazumevanog transforma
+   ograničimo širinu isporuke (isti Cloudinary tok, samo drugi parametri). */
+const naturalThumb = (src: string) =>
+  src.replace("/upload/f_auto,q_auto,dpr_auto/", "/upload/f_auto,q_auto,c_limit,w_1100/");
+
+export default async function CategoryStoryPage({ params, searchParams }: Props) {
+  const { cat: raw } = await params;
   if (!isCatSlug(raw)) return notFound();
   const cat = raw as CatSlug;
   const label = CAT_LABEL[cat];
 
-  const gridItems = listPublicImagesIn(cat, { transform: "card" }).map((it, i) => ({
-    src: it.src,
+  const gridItems = listPublicImagesIn(cat).map((it, i) => ({
+    src: naturalThumb(it.src),
     alt: altForImage(it.src, label, i),
   }));
   if (!gridItems.length) return notFound();
@@ -65,8 +77,12 @@ export default function CategoryStoryPage({ params, searchParams }: Props) {
     alt: altForImage(it.src, label, i),
   }));
 
-  const fromHome = searchParams?.from === "home";
+  const fromHome = (await searchParams)?.from === "home";
   const homeHref = fromHome ? "/?restore=1" : "/";
+
+  // Sledeća kategorija — tihi editorial tok kroz portfolio
+  const order = listPortfolioCats();
+  const nextCat = order[(order.indexOf(cat) + 1) % order.length];
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -81,45 +97,61 @@ export default function CategoryStoryPage({ params, searchParams }: Props) {
   return (
     <>
       <Navbar />
-      <main className="section">
-        <Container>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-          />
-
-          <nav aria-label="Putanja" className="text-sm text-[var(--muted)]">
-            <Link href={homeHref} className="link">Početna</Link>
-            <span aria-hidden="true" className="mx-2 text-[var(--border-strong)]">/</span>
-            <Link href="/portfolio" className="link">Priče</Link>
-            <span aria-hidden="true" className="mx-2 text-[var(--border-strong)]">/</span>
-            <span aria-current="page" className="text-[var(--fg)]">{label}</span>
-          </nav>
-
-          <div className="mt-6 max-w-2xl">
-            <h1>{label}</h1>
-            <p className="lead mt-4">{CAT_INTRO[cat]}</p>
-            <p className="mt-3 text-sm text-[var(--muted)]">{photoCountLabel(gridItems.length)}</p>
-          </div>
-
-          <div className="mt-10">
-            <FlipbookPageClient
-              gridItems={gridItems}
-              flipItems={flipItems}
-              lightboxItems={lightboxItems}
-              label={label}
+      <main>
+        <section className="pb-20 pt-14 md:pb-28 md:pt-20">
+          <Container className="!max-w-[1480px] md:!px-8">
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
             />
-          </div>
 
-          <div className="divider mt-16 pt-12 text-center md:mt-24">
-            <p className="mx-auto max-w-xl font-serif text-2xl md:text-3xl">
-              Zamišljate ovakve fotografije sa svog slavlja?
-            </p>
-            <Link href="/kontakt" className="btn btn-primary mt-6">
-              Proverite svoj datum
-            </Link>
-          </div>
-        </Container>
+            <Reveal>
+              <nav aria-label="Putanja" className="meta-caps">
+                <Link href={homeHref} className="link">Početna</Link>
+                <span aria-hidden="true" className="mx-2 text-[var(--border-strong)]">/</span>
+                <Link href="/portfolio" className="link">Priče</Link>
+                <span aria-hidden="true" className="mx-2 text-[var(--border-strong)]">/</span>
+                <span aria-current="page" className="text-[var(--fg)]">{label}</span>
+              </nav>
+
+              {/* Editorial zaglavlje: naslov levo, uvod desno */}
+              <div className="mt-10 grid gap-8 md:mt-14 md:grid-cols-12 md:items-end">
+                <div className="md:col-span-7">
+                  <span className="eyebrow">Priče</span>
+                  <h1 className="display-2 mt-4">
+                    <em className="serif-italic">{label}</em>
+                  </h1>
+                </div>
+                <div className="md:col-span-5 md:pb-2">
+                  <p className="lead max-w-md leading-relaxed md:ml-auto">
+                    {CAT_INTRO[cat]}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+
+            <div className="mt-12 md:mt-16">
+              <FlipbookPageClient
+                gridItems={gridItems}
+                flipItems={flipItems}
+                lightboxItems={lightboxItems}
+                label={label}
+              />
+            </div>
+
+            {/* Tihi tok dalje — nazad na indeks ili sledeća kategorija */}
+            <Reveal>
+              <div className="mt-16 flex flex-wrap items-baseline justify-between gap-6 border-t border-[var(--border)] pt-8 md:mt-24 md:pt-10">
+                <Link href="/portfolio" className="btn-text">
+                  ← Sve priče
+                </Link>
+                <Link href={`/portfolio/${nextCat}`} className="btn-text">
+                  Sledeća priča: {CAT_LABEL[nextCat]} →
+                </Link>
+              </div>
+            </Reveal>
+          </Container>
+        </section>
       </main>
       <Footer />
     </>

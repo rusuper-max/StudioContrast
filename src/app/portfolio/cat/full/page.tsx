@@ -11,10 +11,14 @@ import { altForImage } from "@/lib/alt";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Props = { params: { cat: CatSlug }, searchParams: { from?: string } };
+type Props = {
+  params: Promise<{ cat: CatSlug }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
-export function generateMetadata({ params }: Props) {
-  const label = CAT_LABEL[params.cat];
+export async function generateMetadata({ params }: Props) {
+  const { cat } = await params;
+  const label = CAT_LABEL[cat];
   if (!label) return { title: "Priče | Studio Contrast" };
   return {
     title: `${label} — sve fotografije | Studio Contrast`,
@@ -22,8 +26,8 @@ export function generateMetadata({ params }: Props) {
   };
 }
 
-export default function CategoryFullPage({ params, searchParams }: Props) {
-  const cat = params.cat;
+export default async function CategoryFullPage({ params, searchParams }: Props) {
+  const { cat } = await params;
   const label = CAT_LABEL[cat];
   if (!label) return notFound();
 
@@ -33,7 +37,7 @@ export default function CategoryFullPage({ params, searchParams }: Props) {
   }));
   if (!items.length) return notFound();
 
-  const fromHome = searchParams?.from === "home";
+  const fromHome = (await searchParams)?.from === "home";
   const backToStory = `/portfolio/${cat}${fromHome ? "?from=home" : ""}`;
 
   return (
