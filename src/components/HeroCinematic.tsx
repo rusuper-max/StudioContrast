@@ -24,6 +24,10 @@ export default function HeroCinematic({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [muted, setMuted] = useState(true);
+  /** Safari/iOS umeju da odbiju autoplay (per-site „Auto-Play“ podešavanje
+   *  ili Low Power Mode). Tada nudimo dugme — potez korisnika je uvek
+   *  dozvoljen — umesto da kadar deluje zamrznuto. */
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -67,27 +71,38 @@ export default function HeroCinematic({
     let cancelled = false;
     const tryPlay = () => {
       if (cancelled || !v.paused) return;
-      // Odbijanje je moguće (npr. Low Power Mode) — tada ostaje poster, koji
-      // je isti kadar, pa deluje namerno. Ali ne odustajemo posle prvog puta.
-      v.play().catch(() => {});
+      v.play().then(
+        () => setBlocked(false),
+        () => {}
+      );
     };
 
     tryPlay();
 
     const events = ["loadedmetadata", "loadeddata", "canplay", "canplaythrough", "stalled", "suspend"];
     for (const e of events) v.addEventListener(e, tryPlay);
+    const onPlaying = () => setBlocked(false);
+    v.addEventListener("playing", onPlaying);
     const onVisible = () => {
       if (document.visibilityState === "visible") tryPlay();
     };
     document.addEventListener("visibilitychange", onVisible);
-    // Poslednja mreža: ako Safari i dalje stoji, probaj još par puta.
-    const timers = [400, 1200, 3000, 6000].map((ms) => window.setTimeout(tryPlay, ms));
+
+    const timers = [400, 1200, 3000].map((ms) => window.setTimeout(tryPlay, ms));
+    // Ako snimak ima dovoljno podataka a i dalje stoji, pregledač je odbio
+    // autoplay. (Uslov readyState>=2 sprečava da se dugme pojavi samo zato
+    // što se na sporoj vezi još učitava.)
+    const giveUp = window.setTimeout(() => {
+      if (!cancelled && v.paused && v.readyState >= 2) setBlocked(true);
+    }, 5000);
 
     return () => {
       cancelled = true;
       for (const e of events) v.removeEventListener(e, tryPlay);
+      v.removeEventListener("playing", onPlaying);
       document.removeEventListener("visibilitychange", onVisible);
       timers.forEach(window.clearTimeout);
+      window.clearTimeout(giveUp);
     };
   }, [muted, showVideo]);
 
@@ -180,7 +195,27 @@ export default function HeroCinematic({
                 <span className="absolute inset-y-0 left-0 w-1/2 animate-[heroline_2.2s_ease-in-out_infinite] bg-[var(--ink-fg)]/80" />
               </span>
             </span>
-            {showVideo ? (
+            {showVideo && blocked ? (
+              // Pregledač je odbio autoplay (Safari per-site podešavanje ili
+              // Low Power Mode) — potez korisnika je uvek dozvoljen.
+              <button
+                onClick={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  v.play().then(
+                    () => setBlocked(false),
+                    () => {}
+                  );
+                }}
+                className="inline-flex items-center gap-2.5 text-[10px] uppercase tracking-[0.3em] text-[var(--ink-fg)]/80 transition hover:text-[var(--ink-fg)]"
+                aria-label="Pustite video"
+              >
+                <svg width="9" height="11" viewBox="0 0 9 11" aria-hidden="true">
+                  <path d="M0 0l9 5.5L0 11z" fill="currentColor" />
+                </svg>
+                Pustite video
+              </button>
+            ) : showVideo ? (
               <button
                 onClick={() => setMuted((m) => !m)}
                 className="text-[10px] uppercase tracking-[0.3em] text-[var(--ink-fg)]/55 transition hover:text-[var(--ink-fg)]"
