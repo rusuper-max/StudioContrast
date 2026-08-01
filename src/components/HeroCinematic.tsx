@@ -96,6 +96,40 @@ export default function HeroCinematic({
       if (!cancelled && v.paused && v.readyState >= 2) setBlocked(true);
     }, 5000);
 
+    /**
+     * Čuvar iscrtavanja (Safari): zabeležen je slučaj gde ZVUK ide, a slika
+     * stoji na prvom kadru — element pušta, ali se video kadrovi nikad ne
+     * prezentuju. requestVideoFrameCallback javlja svaki STVARNO iscrtan
+     * kadar; ako vreme odmiče a nijedan kadar nije prikazan, uradi
+     * programski ono što ručni refresh radi: reload izvora + play.
+     */
+    let framesPresented = 0;
+    let rvfcId: number | undefined;
+    let recoveries = 0;
+    const supportsRVFC = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+    const armFrameCounter = () => {
+      if (!supportsRVFC) return;
+      const onFrame = () => {
+        framesPresented++;
+        rvfcId = v.requestVideoFrameCallback(onFrame);
+      };
+      rvfcId = v.requestVideoFrameCallback(onFrame);
+    };
+    armFrameCounter();
+    const watchdog = supportsRVFC
+      ? window.setInterval(() => {
+          if (cancelled || v.paused) return;
+          if (v.currentTime > 1.2 && framesPresented === 0 && recoveries < 2) {
+            recoveries++;
+            v.dataset.scRecoveries = String(recoveries);
+            if (rvfcId !== undefined) v.cancelVideoFrameCallback?.(rvfcId);
+            v.load();
+            armFrameCounter();
+            v.play().catch(() => {});
+          }
+        }, 2000)
+      : undefined;
+
     return () => {
       cancelled = true;
       for (const e of events) v.removeEventListener(e, tryPlay);
@@ -103,6 +137,8 @@ export default function HeroCinematic({
       document.removeEventListener("visibilitychange", onVisible);
       timers.forEach(window.clearTimeout);
       window.clearTimeout(giveUp);
+      if (watchdog !== undefined) window.clearInterval(watchdog);
+      if (rvfcId !== undefined) v.cancelVideoFrameCallback?.(rvfcId);
     };
   }, [muted, showVideo]);
 
@@ -128,6 +164,9 @@ export default function HeroCinematic({
         // Bez CSS filtera: gradacija je upečena u sam snimak. Filter na
         // <video> u Safariju gura element na drugu kompozitnu putanju.
         // Izvor se ne postavlja ovde — dodaje ga `attachVideo` (vidi gore).
+        // BEZ `poster` atributa: Safari ume da "zaglavi" na posteru dok zvuk
+        // ide (poznat bag) — vizuelni placeholder je ionako <img> ispod,
+        // identičan prvom kadru, pa se ništa ne menja dok video ne krene.
         <video
           ref={attachVideo}
           className="absolute inset-0 h-full w-full object-cover"
@@ -136,7 +175,6 @@ export default function HeroCinematic({
           loop
           playsInline
           preload="auto"
-          poster={poster}
         />
       )}
 
